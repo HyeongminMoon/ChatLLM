@@ -11,7 +11,7 @@ from fastchat.conversation import (
 )
 
 ### llama-2 orca 스타일 학습용
-chat-orca template
+# chat-orca template
 register_conv_template(
     Conversation(
         name="chat-orca",
