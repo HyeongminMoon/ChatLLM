@@ -24,7 +24,7 @@ from fastchat.serve.model_worker import (
     logger,
     worker_id,
 )
-from fastchat.utils import get_context_length
+from fastchat.utils import get_context_length, is_partial_stop
 
 from fastchat.serve.inference import stop_event
 
@@ -42,6 +42,7 @@ class VLLMWorker(BaseModelWorker):
         limit_worker_concurrency: int,
         no_register: bool,
         llm_engine: AsyncLLMEngine,
+        conv_template: str,
     ):
         super().__init__(
             controller_addr,
@@ -50,6 +51,7 @@ class VLLMWorker(BaseModelWorker):
             model_path,
             model_names,
             limit_worker_concurrency,
+            conv_template,
         )
 
         logger.info(
@@ -70,22 +72,28 @@ class VLLMWorker(BaseModelWorker):
         request_id = params.pop("request_id")
         temperature = float(params.get("temperature", 0.7))
         top_p = float(params.get("top_p", 0.8))
+        top_k = params.get("top_k", -1.0)
+        presence_penalty = float(params.get("presence_penalty", 0.0))
+        frequency_penalty = float(params.get("frequency_penalty", 0.0))
         max_new_tokens = params.get("max_new_tokens", 2048)
         stop_str = params.get("stop", None)
         stop_token_ids = params.get("stop_token_ids", None) or []
-        stop_token_ids.append(self.tokenizer.eos_token_id)
+        if self.tokenizer.eos_token_id is not None:
+            stop_token_ids.append(self.tokenizer.eos_token_id)
         echo = params.get("echo", True)
+        use_beam_search = params.get("use_beam_search", False)
+        best_of = params.get("best_of", None)
 
         # Handle stop_str
+        stop = set()
         if isinstance(stop_str, str) and stop_str != "":
-            stop = [stop_str]
+            stop.add(stop_str)
         elif isinstance(stop_str, list) and stop_str != []:
-            stop = stop_str
-        else:
-            stop = []
+            stop.update(stop_str)
 
         for tid in stop_token_ids:
-            stop.append(self.tokenizer.decode(tid))
+            if tid is not None:
+                stop.add(self.tokenizer.decode(tid))
 
         # make sampling params in vllm
         top_p = max(top_p, 1e-5)
@@ -95,28 +103,74 @@ class VLLMWorker(BaseModelWorker):
             n=1,
             temperature=temperature,
             top_p=top_p,
-            use_beam_search=False,
-            stop=stop,
+            use_beam_search=use_beam_search,
+            stop=list(stop),
+            stop_token_ids=stop_token_ids,
             max_tokens=max_new_tokens,
+            top_k=top_k,
+            presence_penalty=presence_penalty,
+            frequency_penalty=frequency_penalty,
+            best_of=best_of,
         )
-        results_generator = engine.generate(context, sampling_params, request_id) #Problem
+        results_generator = engine.generate(context, sampling_params, request_id)
 
-        try:
-            async for request_output in results_generator:
-                prompt = request_output.prompt
-                if echo:
-                    text_outputs = [
-                        prompt + output.text for output in request_output.outputs
-                    ]
-                else:
-                    text_outputs = [output.text for output in request_output.outputs]
-                text_outputs = " ".join(text_outputs)
-                # Note: usage is not supported yet
-                ret = {"text": text_outputs, "error_code": 0, "usage": {}}
-                yield (json.dumps(ret) + "\0").encode()
-        except Exception as e:
-            logger.warning(f"Exception at VLLMWorker.generate_stream:{e}")
-            return
+        async for request_output in results_generator:
+            prompt = request_output.prompt
+            if echo:
+                text_outputs = [
+                    prompt + output.text for output in request_output.outputs
+                ]
+            else:
+                text_outputs = [output.text for output in request_output.outputs]
+            text_outputs = " ".join(text_outputs)
+
+            partial_stop = any(is_partial_stop(text_outputs, i) for i in stop)
+            # prevent yielding partial stop sequence
+            if partial_stop:
+                continue
+
+            prompt_tokens = len(request_output.prompt_token_ids)
+            completion_tokens = sum(
+                len(output.token_ids) for output in request_output.outputs
+            )
+            ret = {
+                "text": text_outputs,
+                "error_code": 0,
+                "usage": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens,
+                },
+                "cumulative_logprob": [
+                    output.cumulative_logprob for output in request_output.outputs
+                ],
+                "finish_reason": request_output.outputs[0].finish_reason
+                if len(request_output.outputs) == 1
+                else [output.finish_reason for output in request_output.outputs],
+            }
+            # Emit twice here to ensure a 'finish_reason' with empty content in the OpenAI API response.
+            # This aligns with the behavior of model_worker.
+            if request_output.finished:
+                yield (json.dumps(ret | {"finish_reason": None}) + "\0").encode()
+            yield (json.dumps(ret) + "\0").encode()
+#         results_generator = engine.generate(context, sampling_params, request_id) #Problem
+
+#         try:
+#             async for request_output in results_generator:
+#                 prompt = request_output.prompt
+#                 if echo:
+#                     text_outputs = [
+#                         prompt + output.text for output in request_output.outputs
+#                     ]
+#                 else:
+#                     text_outputs = [output.text for output in request_output.outputs]
+#                 text_outputs = " ".join(text_outputs)
+#                 # Note: usage is not supported yet
+#                 ret = {"text": text_outputs, "error_code": 0, "usage": {}}
+#                 yield (json.dumps(ret) + "\0").encode()
+#         except Exception as e:
+#             logger.warning(f"Exception at VLLMWorker.generate_stream:{e}")
+#             return
 
     async def generate(self, params):
         async for x in self.generate_stream(params):
@@ -231,7 +285,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--controller-address", type=str, default="http://localhost:21001"
     )
-    parser.add_argument("--model-path", type=str, default="lmsys/vicuna-7b-v1.3")
+    parser.add_argument("--model-path", type=str, default="lmsys/vicuna-7b-v1.5")
     parser.add_argument(
         "--model-names",
         type=lambda s: s.split(","),
@@ -240,6 +294,26 @@ if __name__ == "__main__":
     parser.add_argument("--limit-worker-concurrency", type=int, default=1024)
     parser.add_argument("--no-register", action="store_true")
     parser.add_argument("--num-gpus", type=int, default=1)
+    parser.add_argument(
+        "--conv-template", type=str, default=None, help="Conversation prompt template."
+    )
+    parser.add_argument(
+        "--trust_remote_code",
+        action="store_false",
+        default=True,
+        help="Trust remote code (e.g., from HuggingFace) when"
+        "downloading the model and tokenizer.",
+    )
+    parser.add_argument(
+        "--gpu_memory_utilization",
+        type=float,
+        default=0.9,
+        help="The ratio (between 0 and 1) of GPU memory to"
+        "reserve for the model weights, activations, and KV cache. Higher"
+        "values will increase the KV cache size and thus improve the model's"
+        "throughput. However, if the value is too high, it may cause out-of-"
+        "memory (OOM) errors.",
+    )
 
     parser = AsyncEngineArgs.add_cli_args(parser)
     args = parser.parse_args()
@@ -247,12 +321,10 @@ if __name__ == "__main__":
         args.model = args.model_path
     if args.num_gpus > 1:
         args.tensor_parallel_size = args.num_gpus
-        # args.engine_use_ray = True
-        # args.worker_use_ray = True
         
     # ray.init(num_gpus=args.num_gpus, )
-    args.worker_use_ray = True
-    args.engine_use_ray = False
+    # args.worker_use_ray = True
+    # args.engine_use_ray = False
     engine_args = AsyncEngineArgs.from_cli_args(args)
     engine = AsyncLLMEngine.from_engine_args(engine_args)
     worker = VLLMWorker(
@@ -264,5 +336,6 @@ if __name__ == "__main__":
         args.limit_worker_concurrency,
         args.no_register,
         engine,
+        args.conv_template,
     )
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
