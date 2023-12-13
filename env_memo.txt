@@ -1,0 +1,39 @@
+메모리, gpu-util은 100%이지만 power는 lazy상태와 유사한 60~70W로 학습이 안되는 현상
+- NCCL_P2P_LEVEL을 명시해줌으로 해결
+
+dataset 에러
+- preprocessing 과정을 추가 
+  - [gpt, chatgpt, bing, bard] -> gpt
+  - [human, user] -> user, 
+  - system이 들어간 데이터 제거
+  - human/gpt/human/gpt turn이 아닌 데이터 제거
+
+loss가 증가하는 현상
+- gradient cliping; --max_grad_norm 추가하여 해결
+
+fsdp Warning: ... not efficient ... 으로 OOM뜨는 현상
+- transformer fixed. 해결
+
+checkpoint saving 안됨 (OOM)
+- torch.distributed.fsdp 모듈 수정 시도했으나 실패
+
+70B모델 학습 시 SIGKILL(-9)가 나는 현상
+- fsdp를 제거하고 deepspeed ZeRO-3를 사용
+
+QLoRA ZeRo stage3 지원 안됨
+
+RuntimeError: output tensor must have the same type as input tensor
+- torch2.0 + deepspeed에서 일어나는 에러
+- torchrun config, deepspeed config 모두에서 bf16 / fp16 맞춰야함
+
+RuntimeError: shape '[1, 4096, 64, 128]' is invalid for input of size 4194304
+- flash attention + Llama-2-70B 에서 일어나는 에러
+- flash attention을 사용하지 않으면 됨. (현재 해결중인 PR이 있는 것으로 보임)
+- flash attention for llama 2 적용하여 해결
+
+AttributeError: 'DeepSpeedZeRoOffload' object has no attribute 'backward'
+- fp16으로 변환 -> 효과없음 -> bf16
+- torchrun에서 optim, scheduler 제거, deepspeed에게 맡김
+
+CPU RAM 초과로 soft lock 현상
+- offloading 방식을 cpu에서 nvme로 변경, pin_memory False로 변경

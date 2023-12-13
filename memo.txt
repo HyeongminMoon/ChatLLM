@@ -1,0 +1,91 @@
+# 인스톨
+- fastchat instruction
+pip3 install -e ".[model_worker,webui]"
+- Autogptq instruction
+pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/cu118/ -> 2023dec (0.5.1)
+pip install auto-gptq --extra-index-url https://github.com/PanQiWei/AutoGPTQ/releases/download/v0.4.2/auto_gptq-0.4.2+cu118-cp310-cp310-linux_x86_64.whl -> fastchat
+- vllm
+vllm -> vllm-gptq_hf python setup.py develop
+vllm-gptq_hf_2023dec -> 2023dec
+버그: async_llm_engine의 new_requests_event 부분들 다 지우기
+- requirements.txt
+- xformers
+pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu118 --force-reinstall
+
+
+# 컨트롤러
+python fastchat/serve/controller.py --port 21001
+
+# 인터페이스
+python fastchat/serve/gradio_web_server.py --port 8860
+
+# 멀티인터페이스
+python3 fastchat/serve/gradio_web_server_multi.py --port 8860
+python3 fastchat/serve/gradio_web_server_multi.py --port 8880 --host 0.0.0.0
+
+
+# model worker
+python fastchat/serve/model_worker.py --model-path /data/git_temp2/llm_weights/vicuna-13b-working-v1/ --controller http://localhost:21001 --port 31000 --worker http://localhost:31000
+
+# gptq
+python fastchat/serve/model_worker.py --model-path /data/git_temp2/llm_weights/wizard-vicuna-13B-GPTQ/ --gptq-wbit 4 --gptq-act-order --controller http://localhost:21001 --port 31004 --worker http://localhost:31004
+
+# AutoGPTQ
+python fastchat/serve/model_worker.py --model-path /data/git_temp2/llm_weights/ko_vicuna_7b-AutoGPTQ/ --gptq-wbit 4 --gptq-groupsize 128 --controller http://localhost:21001 --port 31004 --worker http://localhost:31004 --autogptq
+
+python fastchat/serve/model_worker.py --model-path /data/git_temp2/llm_weights/FreeWilly2-GPTQ/ --controller http://localhost:21001 --port 31005 --worker http://localhost:31005 --autogptq --gptq-wbit 4
+
+
+
+## StableBeluga2-70B-GPTQ
+CUDA_VISIBLE_DEVICES=0 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/StableBeluga2-70B-GPTQ/ --controller http://localhost:21001 --port 31005 --worker http://localhost:31005 --autogptq --gptq-wbit 4 --model-name FreeWilly2-GPTQ
+
+CUDA_VISIBLE_DEVICES=1 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/StableBeluga2-70B-GPTQ/ --controller http://localhost:21001 --port 31006 --worker http://localhost:31006 --autogptq --gptq-wbit 4 --model-name FreeWilly2-GPTQ
+
+## vicuna-13B-v1.5-float16
+CUDA_VISIBLE_DEVICES=2 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/vicuna-13b-v1.5/ --controller http://localhost:21001 --port 31007 --worker http://localhost:31007 --model-name vicuna-13b-v1.5-float16
+
+## vicuna-13B-v1.5-int8
+CUDA_VISIBLE_DEVICES=3 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/vicuna-13b-v1.5/ --controller http://localhost:21001 --port 31008 --worker http://localhost:31008 --model-name vicuna-13b-v1.5-int8 --load-8bit
+
+## vicuna-13B-v1.5-int4
+CUDA_VISIBLE_DEVICES=4 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/vicuna-13B-v1.5-GPTQ/ --controller http://localhost:21001 --port 31009 --worker http://localhost:31009 --autogptq --gptq-wbit 4 --model-name vicuna-13B-v1.5-int4
+
+## vicuna-13B-v1.5-int4-extended_16K
+CUDA_VISIBLE_DEVICES=5 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/vicuna-13B-v1.5-16K-GPTQ/ --controller http://localhost:21001 --port 31010 --worker http://localhost:31010 --autogptq --gptq-wbit 4 --model-name vicuna-13B-v1.5-int4-extended_16K
+
+## stablecode-completion-alpha-3b-4k-GPTQ
+CUDA_VISIBLE_DEVICES=0 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/StableBeluga2-70B-GPTQ/ --controller http://localhost:21001 --port 31005 --worker http://localhost:31005 --autogptq --gptq-wbit 4 --model-name FreeWilly2-GPTQ
+
+## WizardCoder-Guanaco-15B-V1.1-GPTQ
+CUDA_VISIBLE_DEVICES=0 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/StableBeluga2-70B-GPTQ/ --controller http://localhost:21001 --port 31005 --worker http://localhost:31005 --autogptq --gptq-wbit 4 --model-name FreeWilly2-GPTQ
+
+
+## Platypus2-70B-Instruct-GPTQ
+CUDA_VISIBLE_DEVICES=0 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/StableBeluga2-70B-GPTQ/ --controller http://localhost:21001 --port 31005 --worker http://localhost:31005 --autogptq --gptq-wbit 4 --model-name FreeWilly2-GPTQ
+
+
+# vllm
+NCCL_P2P_LEVEL=PIX CUDA_VISIBLE_DEVICES=0,1,2,3 python fastchat/serve/vllm_worker.py --model-path /disk1/data/llm_weights/vicuna-13b-v1.5/ --controller-address http://localhost:21001 --port 31032 --worker-address http://localhost:31032 --num-gpus 4 --max-num-batched-tokens 4000 --gpu-memory-utilization 0.5
+NCCL_P2P_LEVEL=PIX CUDA_VISIBLE_DEVICES=4 python fastchat/serve/vllm_worker.py --model-path /data/llm_weights/vicuna-13b-v1.5/ --controller-address http://localhost:21001 --port 31015 --worker-address http://localhost:31015
+
+# OLLM v1.0
+NCCL_P2P_LEVEL=PIX CUDA_VISIBLE_DEVICES=7 python fastchat/serve/vllm_worker.py --model-path /data/llm_weights/gptq/MingAI-70B-chat-orca_v0.4_v0.2_retrained_checkpoint-2-GPTQ/ --controller-address http://localhost:21001 --port 31001 --worker-address http://localhost:31001 --num-gpus 1 --max-num-batched-tokens 10240 --host 0.0.0.0
+
+# langchain
+
+python fastchat/serve/model_worker.py --model-path /data/git_temp2/llm_weights/wizard-vicuna-13B-UC-GPTQ/ --gptq-wbit 4 --gptq-groupsize 128 --controller http://localhost:21001 --port 31004 --worker http://localhost:31004 --autogptq --model-names "gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002"
+
+## AdosKoVicuna-7b
+CUDA_VISIBLE_DEVICES=0 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/custom_trained/AdosKoVicuna-7b --controller http://localhost:21001 --port 31005 --worker http://localhost:31005
+
+## AdosKoVicuna-13b-lora
+CUDA_VISIBLE_DEVICES=1 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/custom_trained/AdosKoVicuna-13b-lora --controller http://localhost:21001 --port 31006 --worker http://localhost:31006
+
+## Llama-2-7b
+CUDA_VISIBLE_DEVICES=2 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/Llama-2-7b-hf --controller http://localhost:21001 --port 31007 --worker http://localhost:31007
+
+## Llama-2-13b
+CUDA_VISIBLE_DEVICES=3 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/Llama-2-13b-hf --controller http://localhost:21001 --port 31008 --worker http://localhost:31008
+
+--tokenizer hf-internal-testing/llama-tokenizer

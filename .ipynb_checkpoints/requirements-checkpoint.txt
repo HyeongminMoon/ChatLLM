@@ -1,0 +1,14 @@
+sentence_transformers
+chromadb==0.3.27
+pypdf
+translators
+beautifulsoup4
+plotly
+gekko
+# autogptq -> pip install auto-gptq --extra-index-url https://github.com/PanQiWei/AutoGPTQ/releases/download/v0.4.2/auto_gptq-0.4.2+cu118-cp310-cp310-linux_x86_64.whl
+# autogptq typo fix
+# vllm -> vllm-gptq_hf pip install -e .
+# vllm-gptq_hf_2023dec -> 2023dec
+optimum
+#ray==2.6.3
+trafilatura
