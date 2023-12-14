@@ -1343,6 +1343,8 @@ register_conv_template(
     )
 )
 
+add_custom_conv_templates()
+
 if __name__ == "__main__":
     from fastchat.conversation import get_conv_template
 

@@ -32,19 +32,17 @@ from fastchat.model.model_adapter import get_conversation_template
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+from torch.distributed.fsdp import StateDictType, FullStateDictConfig
+from transformers import deepspeed as ds
+import deepspeed
+from deepspeed import zero
+from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
+
 
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
-    trust_remote_code: bool = field(
-        default=False,
-        metadata={
-            "help": "Whether or not to allow for custom models defined on the Hub in their own modeling files"
-        },
-    )
-    padding_side: str = field(
-        default="right", metadata={"help": "The padding side in tokenizer"}
-    )
 
 
 @dataclass
@@ -56,7 +54,7 @@ class DataArguments:
         default=None, metadata={"help": "Path to the evaluation data."}
     )
     lazy_preprocess: bool = False
-
+    data_format: str = 'vicuna'
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -68,6 +66,8 @@ class TrainingArguments(transformers.TrainingArguments):
             "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
         },
     )
+    max_grad_norm: float = field(default=1.0)
+    group_by_length: bool = field(default=False)
 
 
 local_rank = None
@@ -78,24 +78,38 @@ def rank0_print(*args):
         print(*args)
 
 
-def trainer_save_model_safe(trainer: transformers.Trainer):
-    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-    from torch.distributed.fsdp import StateDictType, FullStateDictConfig
-
+# def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str):
+#     """Collects the state dict and dump to disk."""
+#     state_dict = trainer.model.state_dict()
+#     if trainer.args.should_save:
+#         cpu_state_dict = {key: value.cpu() for key, value in state_dict.items()}
+#         del state_dict
+#         trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
+#     model = trainer.model
+def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str):
+    """Collects the state dict and dump to disk."""
+    model = trainer.model
+    state_dict = trainer.model.state_dict()
     save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
-    with FSDP.state_dict_type(
-        trainer.model, StateDictType.FULL_STATE_DICT, save_policy
-    ):
-        trainer.save_model()
+    with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
+        cpu_state_dict = {key: value.cpu() for key, value in state_dict.items()}
+        del state_dict
+    if trainer.args.should_save:
+        trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
 
 
 def preprocess(
     sources,
     tokenizer: transformers.PreTrainedTokenizer,
+    data_format='vicuna_v1.1',
+    additional_system_message=None,
 ) -> Dict:
-    conv = get_conversation_template("vicuna")
+    conv = get_conversation_template(data_format)
     roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
 
+    if additional_system_message is not None:
+        conv.system_message += additional_system_message
+    
     # Apply prompt templates
     conversations = []
     for i, source in enumerate(sources):
@@ -114,7 +128,8 @@ def preprocess(
     input_ids = tokenizer(
         conversations,
         return_tensors="pt",
-        padding="max_length",
+        # padding="max_length", #memo todo False=GPTNeox max_length=Llama
+        padding=False,
         max_length=tokenizer.model_max_length,
         truncation=True,
     ).input_ids
@@ -139,20 +154,12 @@ def preprocess(
             if len(parts) != 2:
                 break
             parts[0] += sep
-            # "-2" is hardcoded for the Llama tokenizer to make the offset correct.
+            # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
             instruction_len = len(tokenizer(parts[0]).input_ids) - 2
-
-            if i != 0 and not tokenizer.legacy:
-                # The legacy and non-legacy modes handle special tokens differently
-                instruction_len -= 1
 
             # Ignore the user instructions
             target[cur_len : cur_len + instruction_len] = IGNORE_TOKEN_ID
             cur_len += turn_len
-
-            if i != 0 and not tokenizer.legacy:
-                # The legacy and non-legacy modes handle special tokens differently
-                cur_len -= 1
 
         target[cur_len:] = IGNORE_TOKEN_ID
 
@@ -160,14 +167,13 @@ def preprocess(
             z = target.clone()
             z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
             rank0_print(tokenizer.decode(z))
-            exit()
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
                 target[:] = IGNORE_TOKEN_ID
                 rank0_print(
                     f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" #turn = {len(turns) - 1}. (ignored)"
+                    f" (ignored)"
                 )
 
     return dict(
@@ -180,16 +186,17 @@ def preprocess(
 class SupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
-    def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer):
+    def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer, data_format='vicuna'):
         super(SupervisedDataset, self).__init__()
 
         rank0_print("Formatting inputs...")
         sources = [example["conversations"] for example in raw_data]
-        data_dict = preprocess(sources, tokenizer)
+        data_dict = preprocess(sources, tokenizer, self.data_format)
 
         self.input_ids = data_dict["input_ids"]
         self.labels = data_dict["labels"]
         self.attention_mask = data_dict["attention_mask"]
+        self.data_format = data_format
 
     def __len__(self):
         return len(self.input_ids)
@@ -205,7 +212,7 @@ class SupervisedDataset(Dataset):
 class LazySupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
-    def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer):
+    def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer, data_format='vicuna'):
         super(LazySupervisedDataset, self).__init__()
         self.tokenizer = tokenizer
 
@@ -213,6 +220,7 @@ class LazySupervisedDataset(Dataset):
         self.tokenizer = tokenizer
         self.raw_data = raw_data
         self.cached_data_dict = {}
+        self.data_format = data_format
 
     def __len__(self):
         return len(self.raw_data)
@@ -221,7 +229,20 @@ class LazySupervisedDataset(Dataset):
         if i in self.cached_data_dict:
             return self.cached_data_dict[i]
 
-        ret = preprocess([self.raw_data[i]["conversations"]], self.tokenizer)
+        data_format = self.data_format
+        additional_system_message = None
+        task_name = self.raw_data[i].get("task_name")
+        if task_name is not None:
+            if task_name == 'instruct':
+                additional_system_message = f" Your reply should be based on the context below.\n\nContext:{self.raw_data[i]['instruction']}" if data_format == 'chat-orca' else f" 당신의 답변은 아래 맥락에 기반하여 대답해야 합니다.\n\n맥락:{self.raw_data[i]['instruction']}"
+            if task_name == 'enkotranslation':
+                data_format = 'enkotranslation-orca' if data_format == 'chat-orca' else 'enkotranslation-ko-orca'
+            if task_name == 'koentranslation':
+                data_format = 'koentranslation-orca' if data_format == 'chat-orca' else 'koentranslation-ko-orca'
+            if task_name == 'summarization':
+                data_format = 'summarization-orca' if data_format == 'chat-orca' else 'summarization-ko-orca'
+        
+        ret = preprocess([self.raw_data[i]["conversations"]], self.tokenizer, data_format, additional_system_message=additional_system_message)
         ret = dict(
             input_ids=ret["input_ids"][0],
             labels=ret["labels"][0],
@@ -242,11 +263,11 @@ def make_supervised_data_module(
     rank0_print("Loading data...")
 
     train_json = json.load(open(data_args.data_path, "r"))
-    train_dataset = dataset_cls(train_json, tokenizer=tokenizer)
+    train_dataset = dataset_cls(train_json, tokenizer=tokenizer, data_format=data_args.data_format)
 
     if data_args.eval_data_path:
         eval_json = json.load(open(data_args.eval_data_path, "r"))
-        eval_dataset = dataset_cls(eval_json, tokenizer=tokenizer)
+        eval_dataset = dataset_cls(eval_json, tokenizer=tokenizer, data_format=data_args.data_format)
     else:
         eval_dataset = None
 
@@ -266,7 +287,6 @@ def train():
     config = transformers.AutoConfig.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
-        trust_remote_code=model_args.trust_remote_code,
     )
     orig_ctx_len = getattr(config, "max_position_embeddings", None)
     if orig_ctx_len and training_args.model_max_length > orig_ctx_len:
@@ -274,29 +294,29 @@ def train():
         config.rope_scaling = {"type": "linear", "factor": scaling_factor}
     config.use_cache = False
 
+    print("ds.is_deepspeed_zero3_enabled():",ds.is_deepspeed_zero3_enabled())
+    
     # Load model and tokenizer
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         config=config,
         cache_dir=training_args.cache_dir,
-        trust_remote_code=model_args.trust_remote_code,
+        max_memory={i: '81920MiB' for i in range(torch.cuda.device_count())},
     )
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         model_max_length=training_args.model_max_length,
-        padding_side=model_args.padding_side,
-        use_fast=False,
-        trust_remote_code=model_args.trust_remote_code,
+        padding_side="right",
+        # use_fast=False,
     )
-
-    if tokenizer.pad_token != tokenizer.unk_token:
-        tokenizer.pad_token = tokenizer.unk_token
+    tokenizer.pad_token = tokenizer.unk_token
 
     # Load data
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
 
     # Start trainner
+    # deepspeed.initialize(model)
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module
     )
@@ -304,14 +324,9 @@ def train():
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()
-
-    # Save model
     model.config.use_cache = True
     trainer.save_state()
-    if trainer.is_deepspeed_enabled:
-        trainer.save_model()
-    else:
-        trainer_save_model_safe(trainer)
+    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
 
 
 if __name__ == "__main__":

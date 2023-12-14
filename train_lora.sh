@@ -5,12 +5,12 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed fastchat/train/train_lora.py \
+deepspeed fastchat/train/train_lora_custom.py \
     --model_name_or_path /disk1/data/llm_weights/Llama-2-7b-hf  \
     --lora_r 8 \
     --lora_alpha 16 \
     --lora_dropout 0.05 \
-    --lora_target_modules 'q_proj v_proj' \
+    --lora_target_modules q_proj v_proj \
     --data_path /disk1/data/llm_datasets/sharegpt_deepl_ko/ko_dataset_2.json \
     --output_dir runs/Llama-2-7b-token_extend-lora-kosharegpt \
     --num_train_epochs 10 \

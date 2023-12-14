@@ -5,14 +5,14 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed fastchat/train/train_lora.py \
-    --model_name_or_path /disk1/data/llm_weights/custom_trained/MingAI-70B-chat-orca_v0.5a \
+deepspeed fastchat/train/train_lora_custom.py \
+    --model_name_or_path /workspaces/data/llm_weights/custom_trained/MingAI-70B-chat-orca_v0.5a \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
-    --lora_target_modules 'q_proj v_proj k_proj o_proj gate_proj down_proj up_proj' \
-    --data_path /disk1/data/llm_datasets/custom/merged_korean_datasets-vicuna-v3.json \
-    --output_dir runs/MingAI-70B-chat-orca_v0.5a-retrained\
+    --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
+    --data_path /workspaces/data/llm_datasets/custom/merged_korean_datasets-vicuna-v3.json \
+    --output_dir runs/training_test\
     --num_train_epochs 1 \
     --max_steps 10 \
     --per_device_train_batch_size 1 \
