@@ -66,6 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def heart_beat_worker(obj):
     while True:
         time.sleep(WORKER_HEART_BEAT_INTERVAL)
@@ -378,9 +379,11 @@ async def api_generate_stream(request: Request):
     background_tasks = create_background_tasks()
     return StreamingResponse(generator, background=background_tasks)
 
+
 @app.post("/worker_stop_stream")
 async def api_stop_stream(request: Request):
     return worker.stop_stream()
+
 
 @app.post("/worker_generate")
 async def api_generate(request: Request):
@@ -472,7 +475,7 @@ if __name__ == "__main__":
             groupsize=args.gptq_groupsize,
             act_order=args.gptq_act_order,
         )
-    
+
     awq_config = AWQConfig(
         ckpt=args.awq_ckpt or args.model_path,
         wbits=args.awq_wbits,

@@ -62,7 +62,7 @@ class VLLMWorker(BaseModelWorker):
 
         if not no_register:
             self.init_heart_beat()
-            
+
         self.request_id = None
 
     async def generate_stream(self, params):
@@ -153,40 +153,41 @@ class VLLMWorker(BaseModelWorker):
             if request_output.finished:
                 yield (json.dumps(ret | {"finish_reason": None}) + "\0").encode()
             yield (json.dumps(ret) + "\0").encode()
-#         results_generator = engine.generate(context, sampling_params, request_id) #Problem
 
-#         try:
-#             async for request_output in results_generator:
-#                 prompt = request_output.prompt
-#                 if echo:
-#                     text_outputs = [
-#                         prompt + output.text for output in request_output.outputs
-#                     ]
-#                 else:
-#                     text_outputs = [output.text for output in request_output.outputs]
-#                 text_outputs = " ".join(text_outputs)
-#                 # Note: usage is not supported yet
-#                 ret = {"text": text_outputs, "error_code": 0, "usage": {}}
-#                 yield (json.dumps(ret) + "\0").encode()
-#         except Exception as e:
-#             logger.warning(f"Exception at VLLMWorker.generate_stream:{e}")
-#             return
+    #         results_generator = engine.generate(context, sampling_params, request_id) #Problem
+
+    #         try:
+    #             async for request_output in results_generator:
+    #                 prompt = request_output.prompt
+    #                 if echo:
+    #                     text_outputs = [
+    #                         prompt + output.text for output in request_output.outputs
+    #                     ]
+    #                 else:
+    #                     text_outputs = [output.text for output in request_output.outputs]
+    #                 text_outputs = " ".join(text_outputs)
+    #                 # Note: usage is not supported yet
+    #                 ret = {"text": text_outputs, "error_code": 0, "usage": {}}
+    #                 yield (json.dumps(ret) + "\0").encode()
+    #         except Exception as e:
+    #             logger.warning(f"Exception at VLLMWorker.generate_stream:{e}")
+    #             return
 
     async def generate(self, params):
         async for x in self.generate_stream(params):
             pass
         return json.loads(x[:-1].decode())
-    
+
     def stop_stream(self):
         logger.info("'stop_stream' has been called")
         stop_event.set()
-        
+
     def set_request_id(self, request_id):
         self.request_id = request_id
-        
+
     def get_request_id(self):
         return self.request_id
-    
+
     def remove_request_id(self):
         self.request_id = None
 
@@ -209,7 +210,7 @@ def create_background_tasks(request_id):
     background_tasks.add_task(release_worker_semaphore)
     background_tasks.add_task(abort_request)
     background_tasks.add_task(worker.remove_request_id)
-    
+
     return background_tasks
 
 
@@ -246,6 +247,7 @@ async def api_generate(request: Request):
     worker.remove_request_id()
     return JSONResponse(output)
 
+
 @app.post("/worker_stop_stream")
 async def api_stop_stream(request: Request):
     params = await request.json()
@@ -255,6 +257,7 @@ async def api_stop_stream(request: Request):
         request_id = worker.get_request_id()
     await engine.abort(request_id)
     return worker.stop_stream()
+
 
 @app.post("/worker_get_status")
 async def api_get_status(request: Request):
@@ -321,7 +324,7 @@ if __name__ == "__main__":
         args.model = args.model_path
     if args.num_gpus > 1:
         args.tensor_parallel_size = args.num_gpus
-        
+
     # ray.init(num_gpus=args.num_gpus, )
     # args.worker_use_ray = True
     # args.engine_use_ray = False

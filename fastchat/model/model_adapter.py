@@ -119,8 +119,10 @@ def register_model_adapter(cls):
     """Register a model adapter."""
     model_adapters.append(cls())
 
+
 def add_custom_model_adapters():
     import fastchat.model.model_adapter_custom
+
 
 @cache
 def get_model_adapter(model_path: str) -> BaseModelAdapter:

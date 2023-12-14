@@ -329,8 +329,10 @@ def get_conv_template(name: str) -> Conversation:
     """Get a conversation template."""
     return conv_templates[name].copy()
 
+
 def add_custom_conv_templates():
     import fastchat.conversation_custom
+
 
 # An empty template for raw conversation.
 register_conv_template(

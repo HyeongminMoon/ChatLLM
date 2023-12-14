@@ -46,9 +46,12 @@ from fastchat.utils import (
 )
 
 from fastchat.modules.translator import translate
-from fastchat.modules.download_url import get_urls_from_search_engine, get_contents_from_search_engine
+from fastchat.modules.download_url import (
+    get_urls_from_search_engine,
+    get_contents_from_search_engine,
+)
 from fastchat.modules.vector_store import (
-    ChromaCollector, 
+    ChromaCollector,
     feed_data_into_collector,
     feed_file_into_collector,
     feed_urls_into_collector,
@@ -86,28 +89,29 @@ ip_expiration_dict = defaultdict(lambda: 0)
 # }
 openai_compatible_models_info = {}
 
+
 class State:
     def __init__(self, model_name):
         self.conv = get_conversation_template(model_name)
         self.conv_id = uuid.uuid4().hex
         self.skip_next = False
         self.model_name = model_name
-        
+
         ## ChatMemory
         self.chat_memory = None
-        
+
         ## translator plugin
         self.translator = "None"
         self.saved_conv = None
         self.ts_lang = "ko"
-        
+
         ## retrivalQA plugin
         self.use_retrievalqa = False
         self.collector = ChromaCollector()
-        
+
         ## WebSearch plugin. default=True
         self.use_websearch = True
-        
+
         if model_name == "palm-2":
             # According to release note, "chat-bison@001" is PaLM 2 for chat.
             # https://cloud.google.com/vertex-ai/docs/release-notes#May_10_2023
@@ -157,7 +161,7 @@ def get_model_list(
             open(register_openai_compatible_models)
         )
         models += list(openai_compatible_models_info.keys())
-        
+
     if add_chatgpt:
         models += ["gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4"]
     if add_claude:
@@ -170,7 +174,7 @@ def get_model_list(
         del models[models.index("deluxe-chat-v1")]
     if "deluxe-chat-v1.1" in models:
         del models[models.index("deluxe-chat-v1.1")]
-        
+
     priority = {k: f"___{i:02d}" for i, k in enumerate(model_info)}
     models.sort(key=lambda x: priority.get(x, x))
     logger.info(f"Models: {models}")
@@ -252,9 +256,13 @@ def flag_last_response(state, model_selector, request: gr.Request):
     return ("",) + (disable_btn,) * 3
 
 
-def stop_response(state, model_selector, request: gr.Request): 
+def stop_response(state, model_selector, request: gr.Request):
     logger.info(f"stop. ip: {request.client.host}, session_id: {state.conv_id}")
-    _ = requests.post(state.worker_addr + "/worker_stop_stream", timeout=5, json={"session_id": state.conv_id})
+    _ = requests.post(
+        state.worker_addr + "/worker_stop_stream",
+        timeout=5,
+        json={"session_id": state.conv_id},
+    )
     return ("",) + (disable_btn,)
 
 
@@ -271,22 +279,24 @@ def clear_history(state, request: gr.Request):
         translator = state.translator
         ts_lang = state.ts_lang
         use_retrievalqa = state.use_retrievalqa
-        collector =  state.collector
+        collector = state.collector
         use_websearch = state.use_websearch
-        
+
         state = State(model_name)
         state.translator = translator
         state.ts_lang = ts_lang
         state.use_retrievalqa = use_retrievalqa
         state.collector = collector
         state.use_websearch = use_websearch
-    
+
     return (state, [], "") + (disable_btn,) * 6
+
 
 def clear_all(state, request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     state = None
     return (state, [], "") + (disable_btn,) * 6
+
 
 def translate_set(state, model_selector, ts_box, request: gr.Request):
     logger.info(f"set translator to {ts_box}")
@@ -295,12 +305,14 @@ def translate_set(state, model_selector, ts_box, request: gr.Request):
     state.translator = ts_box
     return state
 
+
 def ts_lang_set(state, model_selector, ts_lang, request: gr.Request):
     logger.info(f"set ts_lang to {ts_lang}")
     if state is None:
         state = State(model_selector)
     state.ts_lang = ts_lang
     return state
+
 
 def retrieval_set(state, model_selector, retrieval_checkbox, request: gr.Request):
     logger.info(f"set retrieval_checkbox to {retrieval_checkbox}")
@@ -309,73 +321,82 @@ def retrieval_set(state, model_selector, retrieval_checkbox, request: gr.Request
     # if state.use_websearch:
     #     log_msg = "이 플러그인은 WebSearch 플러그인과 함께 사용할 수 없습니다. 해당 플러그인을 해제 후 다시 시도하시기 바랍니다."
     #     return state, log_msg, False
-        
+
     state.collector = ChromaCollector()
     if retrieval_checkbox:
         state.use_retrievalqa = True
     else:
         state.use_retrievalqa = False
-    
+
     log_msg = "플러그인 로드 완료" if retrieval_checkbox else "플러그인 해제 완료"
     return state, log_msg, retrieval_checkbox
 
-def retrieval_text_upload(state, retrieval_checkbox, retrieval_text, request: gr.Request):
+
+def retrieval_text_upload(
+    state, retrieval_checkbox, retrieval_text, request: gr.Request
+):
     logger.info(f"retrieval text upload.")
     if not retrieval_checkbox:
         return state, "플러그인을 적용한 뒤 다시 시도하시기 바랍니다."
-    
+
     state.collector.clear()
     feed_data_into_collector(state.collector, retrieval_text)
     return state, "업로드 완료"
 
-def retrieval_file_upload(state, retrieval_checkbox, retrieval_files, request: gr.Request):
+
+def retrieval_file_upload(
+    state, retrieval_checkbox, retrieval_files, request: gr.Request
+):
     logger.info(f"retrieval file upload.")
     if not retrieval_checkbox:
         yield state, "플러그인을 적용한 뒤 다시 시도하시기 바랍니다."
         return
-    
+
     state.collector.clear()
     for idx, file in enumerate(retrieval_files):
         yield state, f"{os.path.basename(file.name)} 업로드 중..."
         feed_file_into_collector(state.collector, file.name)
-    
+
     yield state, "파일 업로드 완료"
     return
 
-def retrieval_urls_upload(state, retrieval_checkbox, retrieval_urls, request: gr.Request):
+
+def retrieval_urls_upload(
+    state, retrieval_checkbox, retrieval_urls, request: gr.Request
+):
     logger.info(f"retrieval urls upload.")
     if not retrieval_checkbox:
         yield state, "플러그인을 적용한 뒤 다시 시도하시기 바랍니다."
         return
-    
+
     yield state, f"URL을 읽어들이는 중..."
     state.collector.clear()
-    feed_urls_into_collector(state.collector, retrieval_urls.split('\n'))
-    
-    for url in retrieval_urls.split('\n'):
-        if url.endswith('.pdf'):
-            
-            yield state, "업로드 완료 <주의> pdf url은 인식되지 않습니다. 다운로드하여 파일탭을 사용해주세요." 
+    feed_urls_into_collector(state.collector, retrieval_urls.split("\n"))
+
+    for url in retrieval_urls.split("\n"):
+        if url.endswith(".pdf"):
+            yield state, "업로드 완료 <주의> pdf url은 인식되지 않습니다. 다운로드하여 파일탭을 사용해주세요."
             return
-    
+
     yield state, "업로드 완료"
     return
+
 
 def websearch_set(state, model_selector, websearch_checkbox, request: gr.Request):
     logger.info(f"set websearch_checkbox to {websearch_checkbox}")
     if state is None:
         state = State(model_selector)
-        
+
     # if state.use_retrievalqa:
     #     log_msg = "이 플러그인은 retrievalQA 플러그인과 함께 사용할 수 없습니다. 해당 플러그인을 해제 후 다시 시도하시기 바랍니다."
     #     return state, log_msg, False
-        
+
     state.collector = ChromaCollector()
     if websearch_checkbox:
         state.use_websearch = True
     else:
         state.use_websearch = False
-    
+
     log_msg = "플러그인 로드 완료" if websearch_checkbox else "플러그인 해제 완료"
     return state, log_msg, websearch_checkbox
 
@@ -412,7 +433,6 @@ def add_text(state, model_selector, text, request: gr.Request):
         return (state, state.to_gradio_chatbot(), CONVERSATION_LIMIT_MSG) + (
             no_change_btn,
         ) * 6
-
 
     # text = text[:INPUT_CHAR_LEN_LIMIT]  # Hard cut-off
     conv.append_message(conv.roles[0], text)
@@ -456,7 +476,7 @@ def model_worker_stream_iter(
         "stop": conv.stop_str,
         "stop_token_ids": conv.stop_token_ids,
         "echo": False,
-        "session_id": session_id
+        "session_id": session_id,
     }
     logger.info(f"==== request ====\n{gen_params}")
 
@@ -474,7 +494,9 @@ def model_worker_stream_iter(
             yield data
 
 
-def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, request: gr.Request):
+def bot_response(
+    state, temperature, top_p, repetition_penalty, max_new_tokens, request: gr.Request
+):
     logger.info(f"bot_response. ip: {request.client.host}")
     start_tstamp = time.time()
     temperature = float(temperature)
@@ -542,47 +564,64 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
 
         # Construct prompt.
         # We need to call it here, so it will not be affected by "▌".
-        system_type = 'default'
+        system_type = "default"
         retrieval_chunks = []
         current_user_message = state.conv.messages[-2][1]
         ### retrievalqa
         if state.use_retrievalqa:
-            system_type = 'retrieval'
-            retrieval_chunks = state.collector.get_sorted(current_user_message, n_results=5)
-        
+            system_type = "retrieval"
+            retrieval_chunks = state.collector.get_sorted(
+                current_user_message, n_results=5
+            )
+
         ### websearch
         search_flag = False
         if state.use_websearch:
-            if current_user_message.startswith('#'):
+            if current_user_message.startswith("#"):
                 current_user_message = current_user_message[1:].lstrip()
                 if len(state.conv.messages) > 2:
-                    state.conv.messages[-2][1] = "*정확한 검색을 위해 과거 데이터를 삭제했습니다.*\n" + current_user_message
-                    state.conv.messages = [state.conv.messages[-2], state.conv.messages[-1]]
+                    state.conv.messages[-2][1] = (
+                        "*정확한 검색을 위해 과거 데이터를 삭제했습니다.*\n" + current_user_message
+                    )
+                    state.conv.messages = [
+                        state.conv.messages[-2],
+                        state.conv.messages[-1],
+                    ]
                     state.saved_conv = None
                 else:
                     state.conv.messages[-2][1] = current_user_message
-                
+
                 search_flag = True
             # elif len(state.conv.messages) <= 2:
             #     search_flag = True
-                
+
             if search_flag:
                 conv.update_last_message(f"*Searching...*")
-                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (disable_btn,) * 2
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (
+                    enable_btn,
+                ) + (disable_btn,) * 2
                 state.collector.clear()
-                search_keywords = generate_keyword(model_name, current_user_message, controller_url)
-                
+                search_keywords = generate_keyword(
+                    model_name, current_user_message, controller_url
+                )
+
                 conv.update_last_message(f"*Searching {search_keywords[0]}...*")
-                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (disable_btn,) * 2
-                
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (
+                    enable_btn,
+                ) + (disable_btn,) * 2
+
                 print("search", search_keywords[0])
                 # search_contents, urls = get_contents_from_search_engine(search_keywords[0])
-                for search_contents, urls, is_yield in get_websearch_result(state.collector, search_keywords[0]):
+                for search_contents, urls, is_yield in get_websearch_result(
+                    state.collector, search_keywords[0]
+                ):
                     if is_yield:
                         conv.update_last_message(search_contents)
-                        yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (disable_btn,) * 2
-                    
-                system_type = 'retrieval'
+                        yield (state, state.to_gradio_chatbot()) + (
+                            disable_btn,
+                        ) * 3 + (enable_btn,) + (disable_btn,) * 2
+
+                system_type = "retrieval"
                 retrieval_chunks = [search_contents]
                 state.conv.messages[-2][1] = current_user_message
                 conv.update_last_message(f"")
@@ -590,7 +629,7 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
             #     retrieval_chunks = state.collector.get_sorted(' '.join(current_user_message.split(' ')[:]), n_results=5)
             # except:
             #     retrieval_chunks = []
-        
+
         if state.saved_conv is not None:
             prompt = state.saved_conv.get_prompt(system_type, retrieval_chunks)
         else:
@@ -601,18 +640,18 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
             repetition_penalty = 1.2
         else:
             repetition_penalty = 1.0
-            
+
         # Set custom configuration if it exists
-        custom_config = state.dict().get('config')
+        custom_config = state.dict().get("config")
         if custom_config is not None:
-            if 'temperature' in custom_config:
-                temperature = custom_config['temperature']
-            if 'repetition_penalty' in custom_config:
-                repetition_penalty = custom_config['repetition_penalty']
-            if 'top_p' in custom_config:
-                top_p = custom_config['top_p']
-            if 'max_new_tokens' in custom_config:
-                max_new_tokens = custom_config['max_new_tokens']
+            if "temperature" in custom_config:
+                temperature = custom_config["temperature"]
+            if "repetition_penalty" in custom_config:
+                repetition_penalty = custom_config["repetition_penalty"]
+            if "top_p" in custom_config:
+                top_p = custom_config["top_p"]
+            if "max_new_tokens" in custom_config:
+                max_new_tokens = custom_config["max_new_tokens"]
 
         stream_iter = model_worker_stream_iter(
             conv,
@@ -627,7 +666,9 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
         )
 
     conv.update_last_message("*Typing...*")
-    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (disable_btn,) * 2
+    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (
+        disable_btn,
+    ) * 2
 
     try:
         for data in stream_iter:
@@ -636,7 +677,9 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
                 if "vicuna" in model_name:
                     output = post_process_code(output)
                 conv.update_last_message(output + "▌")
-                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (enable_btn,) + (disable_btn,) * 2
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 3 + (
+                    enable_btn,
+                ) + (disable_btn,) * 2
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"
                 conv.update_last_message(output)
@@ -683,7 +726,9 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
     last_message = conv.messages[-1][-1][:-1]
     conv.update_last_message(last_message)
     state.worker_addr = None
-    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (disable_btn,) + (enable_btn,) * 2
+    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (disable_btn,) + (
+        enable_btn,
+    ) * 2
 
     finish_tstamp = time.time()
     logger.info(f"{output}")
@@ -704,7 +749,7 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
             "ip": request.client.host,
         }
         fout.write(json.dumps(data) + "\n")
-        
+
     if state.translator != "None":
         if state.saved_conv is None:
             state.saved_conv = copy.deepcopy(conv)
@@ -713,19 +758,27 @@ def bot_response(state, temperature, top_p, repetition_penalty, max_new_tokens, 
         ori_output = copy.deepcopy(output)
     if state.translator in ["Google", "Papago"]:
         output = translate(output, state.translator.lower(), state.ts_lang)
-        last_message = ori_output + f'\n\n번역({state.translator}):\n\n' + output
+        last_message = ori_output + f"\n\n번역({state.translator}):\n\n" + output
         conv.update_last_message(last_message)
-        
-        yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (disable_btn,) + (enable_btn,) * 2
+
+        yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (
+            disable_btn,
+        ) + (enable_btn,) * 2
     if search_flag:
         if state.saved_conv is None:
             state.saved_conv = copy.deepcopy(conv)
         else:
             state.saved_conv.update_last_message(conv.messages[-1][-1])
-        last_message += '\n\n※개발 중인 기능으로 답변이 정확하지 않을 수 있습니다. 정확한 정보는 아래 링크에서 확인해주세요.\nReferences:\n' + '\n'.join(urls[:3])
+        last_message += (
+            "\n\n※개발 중인 기능으로 답변이 정확하지 않을 수 있습니다. 정확한 정보는 아래 링크에서 확인해주세요.\nReferences:\n"
+            + "\n".join(urls[:3])
+        )
         conv.update_last_message(last_message)
-        
-        yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (disable_btn,) + (enable_btn,) * 2
+
+        yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 3 + (
+            disable_btn,
+        ) + (enable_btn,) * 2
+
 
 block_css = """
 #notice_markdown {
@@ -829,7 +882,7 @@ def build_single_model_ui(models, add_promotion_links=False):
     #         - Introducing Llama 2: The Next Generation Open Source Large Language Model. [[Website]](https://ai.meta.com/llama/)
     # - Vicuna: An Open-Source Chatbot Impressing GPT-4 with 90% ChatGPT Quality. [[Blog]](https://lmsys.org/blog/2023-03-30-vicuna/)
     # - | [GitHub](https://github.com/lm-sys/FastChat) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx) |
-    
+
     notice_markdown = f"""
 # Ados Large Language Models Test Page
 {promotion}
@@ -838,8 +891,8 @@ def build_single_model_ui(models, add_promotion_links=False):
 * MingAI-70B: Llama2 베이스로 아도스에서 만든 모델
 * Upstage-Llama2-70B: Llama2 베이스로 업스테이지에서 만든 모델. Open LLM 리더보드에서 1위를 달성했었음.
 """
-# ### Terms of use
-# By using this service, users are required to agree to the following terms: The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. **The service collects user dialogue data and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) license.**
+    # ### Terms of use
+    # By using this service, users are required to agree to the following terms: The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. **The service collects user dialogue data and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) license.**
 
     state = gr.State()
     model_description_md = get_model_description_md(models)
@@ -860,8 +913,8 @@ def build_single_model_ui(models, add_promotion_links=False):
         label="Scroll down and start chatting",
         visible=False,
         height=550,
-    ) 
-    
+    )
+
     with gr.Row():
         with gr.Column(scale=20):
             textbox = gr.Textbox(
@@ -873,7 +926,6 @@ def build_single_model_ui(models, add_promotion_links=False):
         with gr.Column(scale=1, min_width=50):
             send_btn = gr.Button(value="Send", visible=False)
 
-            
     with gr.Row(visible=False) as button_row:
         upvote_btn = gr.Button(value="👍  대화가 마음에 들어요", interactive=False, visible=True)
         downvote_btn = gr.Button(value="👎  대화가 별로에요", interactive=False, visible=True)
@@ -883,7 +935,7 @@ def build_single_model_ui(models, add_promotion_links=False):
         clear_btn = gr.Button(value="🧹  Clear history", interactive=False)
 
     gr.Markdown("Plugins")
-    with gr.Accordion("번역기", open=False, visible=False) as translator_row: 
+    with gr.Accordion("번역기", open=False, visible=False) as translator_row:
         with gr.Row():
             ts_box = gr.Radio(
                 ["None", "Google", "Papago"],
@@ -898,8 +950,10 @@ def build_single_model_ui(models, add_promotion_links=False):
                 label="번역 언어",
                 info="번역기 종류에 따라 일부 언어는 지원되지 않습니다.",
                 interactive=True,
-             )
-    with gr.Accordion("RetrievalQA(문서기반질문)", open=False, visible=False) as retrievalqa_row: 
+            )
+    with gr.Accordion(
+        "RetrievalQA(문서기반질문)", open=False, visible=False
+    ) as retrievalqa_row:
         retrieval_checkbox = gr.Checkbox(
             label="적용",
             info="텍스트/파일/URL 을 업로드하면 챗봇이 문서를 기반으로 대답합니다.",
@@ -915,9 +969,9 @@ def build_single_model_ui(models, add_promotion_links=False):
                     placeholder="이곳에 텍스트를 입력하세요.",
                     lines=13,
                     # max_lines=100,
-                 )
+                )
                 retrieval_text_upload_btn = gr.Button(value="Upload")
-                
+
             with gr.Tab("파일"):
                 gr.Markdown("지원 형식: [text, .pdf, .docx]")
                 retrieval_files = gr.File(
@@ -927,7 +981,7 @@ def build_single_model_ui(models, add_promotion_links=False):
                     file_types=["text", ".pdf", ".docx"],
                 )
                 retrieval_file_upload_btn = gr.Button(value="Upload")
-                
+
             with gr.Tab("URL"):
                 retrieval_urls = gr.Textbox(
                     show_label=False,
@@ -935,10 +989,10 @@ def build_single_model_ui(models, add_promotion_links=False):
                     placeholder="URL을 입력하세요. 여러 개일경우 줄을 구분하여 입력하세요.",
                     lines=13,
                     # max_lines=100,
-                 )
+                )
                 retrieval_url_upload_btn = gr.Button(value="Upload", visible=True)
-                
-    with gr.Accordion("WebSearch", open=False, visible=False) as websearch_row: 
+
+    with gr.Accordion("WebSearch", open=False, visible=False) as websearch_row:
         websearch_checkbox = gr.Checkbox(
             label="적용",
             info="챗봇이 웹 검색 결과를 기반으로 대답합니다. 맨 앞에 #을 붙여 검색기능을 사용할 수 있습니다.",
@@ -947,7 +1001,7 @@ def build_single_model_ui(models, add_promotion_links=False):
             value=True,
         )
         websearch_log = gr.Markdown()
-        
+
     with gr.Accordion("Parameters", open=False, visible=False) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
@@ -1005,11 +1059,7 @@ def build_single_model_ui(models, add_promotion_links=False):
         [state, model_selector],
         [textbox, upvote_btn, downvote_btn, flag_btn],
     )
-    stop_btn.click(
-        stop_response,
-        [state, model_selector],
-        [textbox, stop_btn]
-    )
+    stop_btn.click(stop_response, [state, model_selector], [textbox, stop_btn])
     regenerate_btn.click(regenerate, state, [state, chatbot, textbox] + btn_list).then(
         bot_response,
         [state, temperature, top_p, repetition_penalty, max_output_tokens],
@@ -1033,18 +1083,49 @@ def build_single_model_ui(models, add_promotion_links=False):
         [state, temperature, top_p, repetition_penalty, max_output_tokens],
         [state, chatbot] + btn_list,
     )
-    
+
     ts_box.change(translate_set, [state, model_selector, ts_box], state)
     ts_lang.change(ts_lang_set, [state, model_selector, ts_lang], state)
 
-    retrieval_checkbox.change(retrieval_set, [state, model_selector, retrieval_checkbox], [state, retrieval_log, retrieval_checkbox])
-    retrieval_text_upload_btn.click(retrieval_text_upload, [state, retrieval_checkbox, retrieval_text], [state, retrieval_log])
-    retrieval_file_upload_btn.click(retrieval_file_upload, [state, retrieval_checkbox, retrieval_files], [state, retrieval_log])
-    retrieval_url_upload_btn.click(retrieval_urls_upload, [state, retrieval_checkbox, retrieval_urls], [state, retrieval_log])
-    
-    websearch_checkbox.change(websearch_set, [state, model_selector, websearch_checkbox], [state, websearch_log, websearch_checkbox])
-    
-    return state, model_selector, chatbot, textbox, send_btn, button_row, translator_row, retrievalqa_row, websearch_row, parameter_row
+    retrieval_checkbox.change(
+        retrieval_set,
+        [state, model_selector, retrieval_checkbox],
+        [state, retrieval_log, retrieval_checkbox],
+    )
+    retrieval_text_upload_btn.click(
+        retrieval_text_upload,
+        [state, retrieval_checkbox, retrieval_text],
+        [state, retrieval_log],
+    )
+    retrieval_file_upload_btn.click(
+        retrieval_file_upload,
+        [state, retrieval_checkbox, retrieval_files],
+        [state, retrieval_log],
+    )
+    retrieval_url_upload_btn.click(
+        retrieval_urls_upload,
+        [state, retrieval_checkbox, retrieval_urls],
+        [state, retrieval_log],
+    )
+
+    websearch_checkbox.change(
+        websearch_set,
+        [state, model_selector, websearch_checkbox],
+        [state, websearch_log, websearch_checkbox],
+    )
+
+    return (
+        state,
+        model_selector,
+        chatbot,
+        textbox,
+        send_btn,
+        button_row,
+        translator_row,
+        retrievalqa_row,
+        websearch_row,
+        parameter_row,
+    )
 
 
 def build_demo(models):

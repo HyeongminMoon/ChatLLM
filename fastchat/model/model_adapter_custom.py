@@ -5,9 +5,10 @@ from fastchat.model.model_adapter import (
 )
 from fastchat.conversation import Conversation
 
+
 class AULMAdapter(BaseModelAdapter):
     """The model adapter for AULM"""
-    
+
     def match(self, model_path: str):
         return "aulm" in model_path.lower()
 
@@ -19,15 +20,16 @@ class AULMAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("aulm")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
+
 
 ### llama-2 orca 스타일 학습용
 class ChatOrcaAdapter(BaseModelAdapter):
     """The model adapter for chat-orca"""
-    
+
     def match(self, model_path: str):
         return "chat-orca" in model_path.lower()
 
@@ -39,14 +41,15 @@ class ChatOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("chat-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
 
+
 class EnkotranslationOrcaAdapter(BaseModelAdapter):
     """The model adapter for enkotranslation-orca"""
-    
+
     def match(self, model_path: str):
         return "enkotranslation-orca" in model_path.lower()
 
@@ -58,14 +61,15 @@ class EnkotranslationOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("enkotranslation-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
 
+
 class KoentranslationOrcaAdapter(BaseModelAdapter):
     """The model adapter for koentranslation-orca"""
-    
+
     def match(self, model_path: str):
         return "koentranslation-orca" in model_path.lower()
 
@@ -77,14 +81,15 @@ class KoentranslationOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("koentranslation-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 class SummarizationOrcaAdapter(BaseModelAdapter):
     """The model adapter for summarization-orca"""
-    
+
     def match(self, model_path: str):
         return "summarization-orca" in model_path.lower()
 
@@ -96,15 +101,16 @@ class SummarizationOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("summarization-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 ### polyglot-ko orca 스타일 학습용
 class EnkotranslationKoOrcaAdapter(BaseModelAdapter):
     """The model adapter for enkotranslation-ko-orca"""
-    
+
     def match(self, model_path: str):
         return "enkotranslation-ko-orca" in model_path.lower()
 
@@ -116,14 +122,15 @@ class EnkotranslationKoOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("enkotranslation-ko-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
 
+
 class KoentranslationKoOrcaAdapter(BaseModelAdapter):
     """The model adapter for koentranslation-ko-orca"""
-    
+
     def match(self, model_path: str):
         return "koentranslation-ko-orca" in model_path.lower()
 
@@ -135,14 +142,15 @@ class KoentranslationKoOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("koentranslation-ko-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 class SummarizationKoOrcaAdapter(BaseModelAdapter):
     """The model adapter for summarization-ko-orca"""
-    
+
     def match(self, model_path: str):
         return "summarization-ko-orca" in model_path.lower()
 
@@ -154,14 +162,15 @@ class SummarizationKoOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("summarization-ko-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 class ChatKoOrcaAdapter(BaseModelAdapter):
     """The model adapter for chat-ko-orca"""
-    
+
     def match(self, model_path: str):
         return "chat-ko-orca" in model_path.lower()
 
@@ -173,14 +182,15 @@ class ChatKoOrcaAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("chat-ko-orca")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
 
+
 class AdosRefineAdapter(BaseModelAdapter):
     """The model adapter for AdosRefine"""
-    
+
     def match(self, model_path: str):
         return "adosrefine" in model_path.lower()
 
@@ -198,21 +208,22 @@ class AdosRefineAdapter(BaseModelAdapter):
             # **from_pretrained_kwargs,
             torch_dtype=torch.float16,
         )
-        
+
         model.config.eos_token_id = tokenizer.eos_token_id
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("adosrefine")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 class FreeWilly2Adapter(BaseModelAdapter):
     """The model adapter for freewilly2"""
-    
+
     def match(self, model_path: str):
         return "freewilly2" in model_path.lower()
 
@@ -224,14 +235,15 @@ class FreeWilly2Adapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("freewilly2")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
-    
+
+
 class Platypus2Adapter(BaseModelAdapter):
     """The model adapter for Platypus2"""
-    
+
     def match(self, model_path: str):
         return "platypus2" in model_path.lower()
 
@@ -243,16 +255,17 @@ class Platypus2Adapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("platypus2")
-        conv_template.config={
-            'max_new_tokens': 4096,
+        conv_template.config = {
+            "max_new_tokens": 4096,
         }
         return conv_template
+
 
 class KoPolyglotAdapter(BaseModelAdapter):
     "Model adapater for polyglot-ko"
 
     def match(self, model_path: str):
-        prefixes = ["polyglot-ko", "kopolyglot", "kmodelp", 'kullm']
+        prefixes = ["polyglot-ko", "kopolyglot", "kmodelp", "kullm"]
         for prefix in prefixes:
             if prefix in model_path.lower():
                 return True
@@ -274,14 +287,15 @@ class KoPolyglotAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("Koalpaca")
-        if 'kullm' in model_path:
-            conv_template.config={ #custom config for kullm
-                'top_p': 0.1,
-                'repetition_penalty': 1.18,
-                'temperature': 1.0,
+        if "kullm" in model_path:
+            conv_template.config = {  # custom config for kullm
+                "top_p": 0.1,
+                "repetition_penalty": 1.18,
+                "temperature": 1.0,
             }
         return conv_template
-    
+
+
 # orca
 register_model_adapter(ChatOrcaAdapter)
 register_model_adapter(SummarizationOrcaAdapter)

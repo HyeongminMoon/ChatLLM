@@ -33,7 +33,6 @@ from fastchat.train.train import (
     DataArguments,
     ModelArguments,
     make_supervised_data_module,
-    
 )
 
 from fastchat.train.llama2_flash_attn_monkey_patch import (
@@ -44,7 +43,7 @@ from fastchat.train.llama2_flash_attn_monkey_patch import (
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
     cache_dir: typing.Optional[str] = field(default=None)
-    optim: str = field(default="adamw_torch") # QLoRA 데이터 클 때 깨지는 이슈 -> 변경해 볼 것
+    optim: str = field(default="adamw_torch")  # QLoRA 데이터 클 때 깨지는 이슈 -> 변경해 볼 것
     model_max_length: int = field(
         default=512,
         metadata={
@@ -68,7 +67,7 @@ class LoraArguments:
     q_lora: bool = False
     load_in_8bit: bool = False
     lora_modules_to_save: typing.List[str] = field(
-        default_factory=lambda: ["embed_tokens", "lm_head"]   
+        default_factory=lambda: ["embed_tokens", "lm_head"]
     )
 
 
@@ -120,15 +119,23 @@ def train():
     ) = parser.parse_args_into_dataclasses()
 
     os.makedirs(training_args.output_dir, exist_ok=True)
-    shutil.copy('train_qlora.sh', os.path.join(training_args.output_dir, 'train_qlora.sh'))
-    
+    shutil.copy(
+        "train_qlora.sh", os.path.join(training_args.output_dir, "train_qlora.sh")
+    )
+
     if training_args.flash_attn:
         replace_llama_attn_with_flash_attn()
 
     device_map = None
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
-    device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp and not deepspeed.is_deepspeed_zero3_enabled() and not lora_args.load_in_8bit else None
+    device_map = (
+        {"": int(os.environ.get("LOCAL_RANK") or 0)}
+        if ddp
+        and not deepspeed.is_deepspeed_zero3_enabled()
+        and not lora_args.load_in_8bit
+        else None
+    )
     if len(training_args.fsdp) > 0 or deepspeed.is_deepspeed_zero3_enabled():
         if lora_args.q_lora and training_args.local_rank == 0:
             logging.warning(
@@ -142,16 +149,19 @@ def train():
     )
     if training_args.local_rank == 0:
         print("world_size:", world_size)
-        print("deepspeed.is_deepspeed_zero3_enabled():", deepspeed.is_deepspeed_zero3_enabled())
+        print(
+            "deepspeed.is_deepspeed_zero3_enabled():",
+            deepspeed.is_deepspeed_zero3_enabled(),
+        )
         print("device_map:", device_map)
-    
+
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         device_map=device_map,
         load_in_8bit=lora_args.load_in_8bit,
         torch_dtype=compute_dtype,
-        max_memory={i: '81920MiB' for i in range(torch.cuda.device_count())},
+        max_memory={i: "81920MiB" for i in range(torch.cuda.device_count())},
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
@@ -165,12 +175,12 @@ def train():
         r=lora_args.lora_r,
         lora_alpha=lora_args.lora_alpha,
         target_modules=lora_args.lora_target_modules,
-        modules_to_save=lora_args.lora_modules_to_save, #23230913 added (v0.22)
+        modules_to_save=lora_args.lora_modules_to_save,  # 23230913 added (v0.22)
         lora_dropout=lora_args.lora_dropout,
         bias=lora_args.lora_bias,
         task_type="CAUSAL_LM",
     )
-    
+
     if lora_args.q_lora or lora_args.load_in_8bit:
         model = prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=training_args.gradient_checkpointing
@@ -179,13 +189,13 @@ def train():
             # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available
             model.is_parallelizable = True
             model.model_parallel = True
-    
+
     if lora_args.load_in_8bit:
         for param in model.parameters():
             # Check if parameter dtype is  Float (float32) due to prepare_model_for_kbit_training
             if param.dtype != compute_dtype:
                 param.data = param.data.to(compute_dtype)
-    
+
     model = get_peft_model(model, lora_config)
     if training_args.flash_attn:
         for name, module in model.named_modules():
@@ -207,17 +217,20 @@ def train():
         padding_side="right",
         # use_fast=False,
     )
-    tokenizer.pad_token = tokenizer.unk_token # todo: 파라미터화
+    tokenizer.pad_token = tokenizer.unk_token  # todo: 파라미터화
 
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     trainer = Trainer(
-        model=model, tokenizer=tokenizer, args=training_args, **data_module, 
+        model=model,
+        tokenizer=tokenizer,
+        args=training_args,
+        **data_module,
     )
 
     # token extending fix
     # if len(tokenizer) != 32000:
     #     model.resize_token_embeddings(len(tokenizer))
-    
+
     model.config.use_cache = False
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):

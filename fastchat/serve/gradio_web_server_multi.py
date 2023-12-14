@@ -24,7 +24,7 @@ from fastchat.serve.gradio_block_arena_named import (
 )
 from fastchat.serve.gradio_prompt_engineering import (
     build_prompt_engineering,
-    set_global_vars_pte
+    set_global_vars_pte,
 )
 from fastchat.serve.gradio_web_server import (
     set_global_vars,
@@ -169,12 +169,11 @@ def build_demo(models, elo_results_file, leaderboard_table_file):
                         c_parameter_row,
                     ]
                 )
-            
-            
+
             if elo_results_file:
                 with gr.Tab("Leaderboard", id=3):
                     build_leaderboard_tab(elo_results_file, leaderboard_table_file)
-                    
+
             with gr.Tab("Prompt Engineering", id=4):
                 (
                     state,

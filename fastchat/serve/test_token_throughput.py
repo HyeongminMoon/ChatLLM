@@ -10,9 +10,10 @@ import pandas as pd
 
 from fastchat.model.model_adapter import get_conversation_template
 
-test_input ="Tell me a story."
+test_input = "Tell me a story."
 test_n_threads = [1, 2, 4, 16, 32, 64]
 test_file_name = "throughput.csv"
+
 
 def main():
     controller_addr = args.controller_address
@@ -30,7 +31,7 @@ def main():
     conv = get_conversation_template(args.model_name)
     conv.append_message(conv.roles[0], test_input)
     prompt_template = conv.get_prompt()
-    
+
     def send_request(results, i):
         thread_worker_addr = worker_url
         # print(f"thread {i} goes to {thread_worker_addr}")
@@ -47,7 +48,6 @@ def main():
         results[i] = response_new_words
 
     for n_thread in test_n_threads:
-              
         prompts = [prompt_template for _ in range(n_thread)]
 
         headers = {"User-Agent": "fastchat Client"}
@@ -78,37 +78,40 @@ def main():
         if n_thread == 1:
             print(f"Sample Result: {results[0]}")
         print(f"Time (POST): {time.time() - tik} s")
-        
+
         time_seconds = time.time() - tik
-        
+
         # count tokens
-        ret = requests.post(
-            worker_url + "/count_token", json={"prompt": test_input}
-        )
+        ret = requests.post(worker_url + "/count_token", json={"prompt": test_input})
         count_q = ret.json()["count"]
         total_count = 0
         for i in range(n_thread):
             result = results[i]
-            ret = requests.post(
-                worker_url + "/count_token", json={"prompt": result}
-            )
+            ret = requests.post(worker_url + "/count_token", json={"prompt": result})
             count = ret.json()["count"] - count_q
             total_count += count
-        
+
         avg_count = total_count / n_thread
-        
+
         print(
             f"Time (Completion): {round(time_seconds, 4)}, n threads: {n_thread}, "
             f"throughput: {round(avg_count / time_seconds, 4)} tokens/s, "
         )
-        
+
         df = pd.DataFrame(
-            [[args.exp_name, n_thread, round(avg_count / time_seconds, 4), args.num_gpu]], 
-            columns=["name", "batch size", "throughput(token/s)","num gpu"],
+            [
+                [
+                    args.exp_name,
+                    n_thread,
+                    round(avg_count / time_seconds, 4),
+                    args.num_gpu,
+                ]
+            ],
+            columns=["name", "batch size", "throughput(token/s)", "num gpu"],
         )
-        
+
         if os.path.exists(test_file_name):
-            df.to_csv(test_file_name, mode='a', header=False)
+            df.to_csv(test_file_name, mode="a", header=False)
         else:
             df.to_csv(test_file_name)
 

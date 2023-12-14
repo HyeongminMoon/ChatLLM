@@ -43,25 +43,27 @@ logger = build_logger("gradio_web_server_multi", "gradio_web_server_multi.log")
 controller_url = None
 enable_moderation = False
 
-template_dir = 'data/prompt_templates'
+template_dir = "data/prompt_templates"
 prompt_templates = {}
-template_keys = sorted(glob.glob(os.path.join(template_dir, '*.json')))
+template_keys = sorted(glob.glob(os.path.join(template_dir, "*.json")))
 for key in template_keys:
-    with open(key, 'r') as f:
+    with open(key, "r") as f:
         prompt_templates[os.path.basename(key)[:-5]] = json.load(f)
+
 
 def load_prompt_templates(request: gr.Request):
     global prompt_templates
     prompt_templates = {}
-    template_keys = sorted(glob.glob(os.path.join(template_dir, '*.json')))
+    template_keys = sorted(glob.glob(os.path.join(template_dir, "*.json")))
     for key in template_keys:
-        with open(key, 'r') as f:
+        with open(key, "r") as f:
             prompt_templates[os.path.basename(key)[:-5]] = json.load(f)
-            
+
     return gr.Dropdown.update(
         choices=list(prompt_templates.keys()),
     )
-    
+
+
 def set_global_vars_pte(controller_url_, enable_moderation_):
     global controller_url, enable_moderation
     controller_url = controller_url_
@@ -102,57 +104,79 @@ def clear_history(request: gr.Request):
     logger.info(f"clear_history (named). ip: {request.client.host}")
     return [None] * num_sides + [None] * num_sides + [""] + [disable_btn] * 6
 
+
 def clear_textbox(request: gr.Request):
     logger.info(f"clear_textbox (pte). ip: {request.client.host}")
     return ""
+
 
 def model_change(model_selector, request: gr.Request):
     logger.info(f"model_change (pte). ip: {request.client.host}")
     state = State(model_selector)
     return state
 
+
 def template_change(template_selector, request: gr.Request):
     logger.info(f"template_change (pte). ip: {request.client.host}")
-    
+
     pt = prompt_templates[template_selector]
     sep = pt["separator"]
     conversations = pt["few_shot_learning"]
-    
+
     prompt = pt["system"] + sep
-    
+
     for i in range(len(conversations)):
         conv = conversations[i]
         prompt += pt["user_prefix"] + f": {conv[0]}"
         prompt += sep + pt["bot_prefix"] + f": {conv[1]}" + pt["stop_token"]
-    
+
     prompt += pt["user_prefix"] + ": %PUT_YOUR_INPUT_HERE%"
     prompt += sep + pt["bot_prefix"] + ":"
-    
-    
-    return prompt, pt["system"], pt["user_prefix"], "%PUT_YOUR_INPUT_HERE%", pt["bot_prefix"], pt["separator"].replace('\n', '\\n').replace('\t', '\\t'), pt["stop_token"], pt["few_shot_learning"]
 
-def prompt_change(system_prompt, user_prompt, user_input, bot_prompt, sep_prompt, stop_token, few_shot_textbox, request: gr.Request):
+    return (
+        prompt,
+        pt["system"],
+        pt["user_prefix"],
+        "%PUT_YOUR_INPUT_HERE%",
+        pt["bot_prefix"],
+        pt["separator"].replace("\n", "\\n").replace("\t", "\\t"),
+        pt["stop_token"],
+        pt["few_shot_learning"],
+    )
+
+
+def prompt_change(
+    system_prompt,
+    user_prompt,
+    user_input,
+    bot_prompt,
+    sep_prompt,
+    stop_token,
+    few_shot_textbox,
+    request: gr.Request,
+):
     logger.info(f"prompt_change (pte). ip: {request.client.host}")
-    
-    sep = sep_prompt.replace('\\n', '\n').replace('\\t', '\t')
-    
+
+    sep = sep_prompt.replace("\\n", "\n").replace("\\t", "\t")
+
     conversations = []
     try:
-        conversations = json.loads(few_shot_textbox.replace('\'', '\"'))
+        conversations = json.loads(few_shot_textbox.replace("'", '"'))
     except:
         return "Error: Few shot learning conversations format is wrong. Please fix it and apply again. It should be composed of double lists."
-    
+
     prompt = system_prompt + sep
-    
+
     for i in range(len(conversations)):
         conv = conversations[i]
         prompt += user_prompt + f": {conv[0]}"
         prompt += sep + bot_prompt + f": {conv[1]}" + stop_token
-    
+
     prompt += user_prompt + f": {user_input}"
     prompt += sep + bot_prompt + ":"
-    
+
     return prompt
+
 
 def enable_save_option(request: gr.Request):
     logger.info(f"enable_save_option (pte). ip: {request.client.host}")
@@ -163,6 +187,7 @@ def enable_save_option(request: gr.Request):
         gr.Button.update(visible=True),
     )
 
+
 def disable_save_option(request: gr.Request):
     logger.info(f"disable_save_option (pte). ip: {request.client.host}")
     return (
@@ -172,37 +197,48 @@ def disable_save_option(request: gr.Request):
         gr.Button.update(visible=False),
     )
 
-def stop_response(state, request: gr.Request): 
+
+def stop_response(state, request: gr.Request):
     logger.info(f"stop (pte). ip: {request.client.host}")
     _ = requests.post(state.worker_addr + "/worker_stop_stream", timeout=5)
 
-def save_prompt_template(prompt_save_name, system_prompt, user_prompt, bot_prompt, sep_prompt, stop_token, few_shot_textbox, request: gr.Request):
+
+def save_prompt_template(
+    prompt_save_name,
+    system_prompt,
+    user_prompt,
+    bot_prompt,
+    sep_prompt,
+    stop_token,
+    few_shot_textbox,
+    request: gr.Request,
+):
     logger.info(f"save_prompt_template (pte). ip: {request.client.host}")
     if not prompt_save_name:
         return f"Save Failed. (Invaild name)"
-    dst_path = os.path.join(template_dir, prompt_save_name + '.json')
+    dst_path = os.path.join(template_dir, prompt_save_name + ".json")
     if os.path.exists(dst_path):
         return f"Save Failed. (Template '{prompt_save_name}' already exists)"
-    
+
     few_shot_prompt = []
-    
+
     try:
-        few_shot_prompt = json.loads(few_shot_textbox.replace('\'', '\"'))
+        few_shot_prompt = json.loads(few_shot_textbox.replace("'", '"'))
     except:
         return "Error: Few shot learning conversations format is wrong. Please fix it and save again. It should be composed of double lists."
-    
+
     temp = {
         "system": system_prompt,
         "user_prefix": user_prompt,
         "bot_prefix": bot_prompt,
-        "separator": sep_prompt.replace('\\n', '\n').replace('\\t', '\t'),
+        "separator": sep_prompt.replace("\\n", "\n").replace("\\t", "\t"),
         "stop_token": stop_token,
         "few_shot_learning": few_shot_prompt,
     }
-    
+
     with open(dst_path, "w") as f:
         json.dump(temp, f)
-    
+
     return f"Successfully saved template as {prompt_save_name}."
 
 
@@ -215,17 +251,20 @@ def bot_text_generate(
     repetition_penalty,
     max_new_tokens,
     snippet_checkbox,
-    user_prompt, bot_prompt, sep_prompt, stop_token,
+    user_prompt,
+    bot_prompt,
+    sep_prompt,
+    stop_token,
     request: gr.Request,
 ):
     logger.info(f"bot_text_generate (pte). ip: {request.client.host}")
 
     if state is None:
         state = State(model_selector)
-    
+
     conv = state.conv
     model_name = state.model_name
-    
+
     # Query worker address
     ret = requests.post(
         controller_url + "/get_worker_address", json={"model": model_name}
@@ -242,7 +281,7 @@ def bot_text_generate(
             text_box,
         )
         return
-    
+
     # Construct Prompt
     prompt = text_box
 
@@ -256,7 +295,7 @@ def bot_text_generate(
         top_p,
         max_new_tokens,
     )
-    
+
     # Update text box
     for data in stream_iter:
         if data["error_code"] == 0:
@@ -264,10 +303,20 @@ def bot_text_generate(
             # if "vicuna" in model_name:
             #     output = post_process_code(output)
             yield (state, text_box + output)
-            
+
     if snippet_checkbox:
-        sep = sep_prompt.replace('\\n', '\n').replace('\\t', '\t')
-        yield (state, text_box + output + stop_token + user_prompt +": %PUT_YOUR_INPUT_HERE%" + sep + bot_prompt + ":")
+        sep = sep_prompt.replace("\\n", "\n").replace("\\t", "\t")
+        yield (
+            state,
+            text_box
+            + output
+            + stop_token
+            + user_prompt
+            + ": %PUT_YOUR_INPUT_HERE%"
+            + sep
+            + bot_prompt
+            + ":",
+        )
 
 
 def build_prompt_engineering(models):
@@ -277,7 +326,7 @@ def build_prompt_engineering(models):
     state = gr.State()
     model_selector = None
     templates = prompt_templates.keys()
-    
+
     with gr.Row():
         model_selector = gr.Dropdown(
             choices=models,
@@ -287,7 +336,7 @@ def build_prompt_engineering(models):
             label="Choose a model",
             container=True,
         )
-        
+
         template_selector = gr.Dropdown(
             choices=templates,
             value="",
@@ -308,20 +357,22 @@ def build_prompt_engineering(models):
 
     with gr.Row():
         send_btn = gr.Button(value="Generate Text", visible=True)
-        
+
     with gr.Row():
         stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=True)
         clear_btn = gr.Button(value="🗑️ Clear", interactive=True)
 
     with gr.Accordion("Advanced Options", open=True, visible=True) as advanced_row:
-        input_explanation = gr.Markdown("%PUT_YOUR_INPUT_HERE%은 사용자 input값으로 대체하여 사용해야 합니다.")
+        input_explanation = gr.Markdown(
+            "%PUT_YOUR_INPUT_HERE%은 사용자 input값으로 대체하여 사용해야 합니다."
+        )
         user_input = gr.Textbox(
             label="user input",
             placeholder="user input",
             interactive=True,
             container=False,
         )
-        
+
         snippet_checkbox = gr.Checkbox(
             value=False,
             info="생성 완료 후 자동으로 다음 대화 템플릿 적용하기",
@@ -329,7 +380,7 @@ def build_prompt_engineering(models):
             container=False,
             label="사용",
         )
-        
+
         prompt_explanation = gr.Markdown("**Prompt template 구성요소**")
         system_prompt = gr.Textbox(
             label="system",
@@ -337,51 +388,66 @@ def build_prompt_engineering(models):
             info="Prompt의 맨 앞에 위치하며, 인공지능의 역할을 정의합니다.",
             interactive=True,
         )
-        
+
         user_prompt = gr.Textbox(
             label="user prefix",
             placeholder="user prefix",
             interactive=True,
         )
-        
+
         bot_prompt = gr.Textbox(
             label="bot prefix",
             placeholder="bot prefix",
             interactive=True,
         )
-        
+
         sep_prompt = gr.Textbox(
             label="separator",
             placeholder="separator",
             info="각 요소 사이의 분리자입니다. \\n=Enter \\t=Tab",
             interactive=True,
         )
-        
+
         stop_token = gr.Textbox(
             label="(Optional)stop token",
             placeholder="stop token",
             info="Multi turn으로 학습된 모델에서 사용합니다. vicuna:</s> llama-2:<|endoftext|>",
             interactive=True,
         )
-        
-        few_shot_explanation = gr.Markdown("**Few shot learning 구성요소**\n\nFew shot learning이란 LLM이 몇가지의 예시만 보고도 그와 유사한 대답을 할 수 있게 하는 방법입니다.")
+
+        few_shot_explanation = gr.Markdown(
+            "**Few shot learning 구성요소**\n\nFew shot learning이란 LLM이 몇가지의 예시만 보고도 그와 유사한 대답을 할 수 있게 하는 방법입니다."
+        )
         few_shot_textbox = gr.Textbox(
             label="conversations",
-            info="이중 리스트의 형태로 작성해야 합니다. ex) [[\"반가워!\", \"반갑습니다. 무엇을 도와드릴까요?\"], [\"UFO가 뭐야?\", \"UFO는 Unidentified Flying Object라는 뜻입니다.\"]]",
+            info='이중 리스트의 형태로 작성해야 합니다. ex) [["반가워!", "반갑습니다. 무엇을 도와드릴까요?"], ["UFO가 뭐야?", "UFO는 Unidentified Flying Object라는 뜻입니다."]]',
             placeholder="Conversations",
             interactive=True,
             lines=3,
         )
-            
 
-        prompt_apply_btn = gr.Button(value="Apply", interactive=True, variant='primary')
+        prompt_apply_btn = gr.Button(value="Apply", interactive=True, variant="primary")
         with gr.Row():
             prompt_save_btn = gr.Button(value="Save as", interactive=True, scale=50)
-            prompt_save_name = gr.Textbox(placeholder="Enter template name", interactive=True, container=False, visible=False, scale=50)
-            prompt_save_confirm_btn = gr.Button(value="Confirm", interactive=True, visible=False, variant='stop', scale=20)
-            prompt_save_cancel_btn = gr.Button(value="Cancel", interactive=True, visible=False, scale=20)
+            prompt_save_name = gr.Textbox(
+                placeholder="Enter template name",
+                interactive=True,
+                container=False,
+                visible=False,
+                scale=50,
+            )
+            prompt_save_confirm_btn = gr.Button(
+                value="Confirm",
+                interactive=True,
+                visible=False,
+                variant="stop",
+                scale=20,
+            )
+            prompt_save_cancel_btn = gr.Button(
+                value="Cancel", interactive=True, visible=False, scale=20
+            )
         logbox = gr.Markdown()
-        
+
     with gr.Accordion("Parameters", open=False, visible=True) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
@@ -424,48 +490,125 @@ def build_prompt_engineering(models):
     clear_btn.click(clear_textbox, None, textbox)
 
     model_selector.change(model_change, model_selector, state).then(
-        load_prompt_templates, None, template_selector,
+        load_prompt_templates,
+        None,
+        template_selector,
     )
     template_selector.select(
-        template_change, 
-        template_selector, 
-        [textbox, system_prompt, user_prompt, user_input, bot_prompt, sep_prompt, stop_token, few_shot_textbox],
+        template_change,
+        template_selector,
+        [
+            textbox,
+            system_prompt,
+            user_prompt,
+            user_input,
+            bot_prompt,
+            sep_prompt,
+            stop_token,
+            few_shot_textbox,
+        ],
     ).then(
-        load_prompt_templates, None, template_selector,
+        load_prompt_templates,
+        None,
+        template_selector,
     )
     prompt_apply_btn.click(
         prompt_change,
-        [system_prompt, user_prompt, user_input, bot_prompt, sep_prompt, stop_token, few_shot_textbox],
+        [
+            system_prompt,
+            user_prompt,
+            user_input,
+            bot_prompt,
+            sep_prompt,
+            stop_token,
+            few_shot_textbox,
+        ],
         textbox,
     )
-    
-    
+
     prompt_save_btn.click(
         enable_save_option,
         None,
-        [prompt_save_btn, prompt_save_name, prompt_save_confirm_btn, prompt_save_cancel_btn],
+        [
+            prompt_save_btn,
+            prompt_save_name,
+            prompt_save_confirm_btn,
+            prompt_save_cancel_btn,
+        ],
     )
     prompt_save_confirm_btn.click(
-        save_prompt_template, 
-        [prompt_save_name, system_prompt, user_prompt, bot_prompt, sep_prompt, stop_token, few_shot_textbox],
+        save_prompt_template,
+        [
+            prompt_save_name,
+            system_prompt,
+            user_prompt,
+            bot_prompt,
+            sep_prompt,
+            stop_token,
+            few_shot_textbox,
+        ],
         logbox,
     ).then(
-        disable_save_option, None, [prompt_save_btn, prompt_save_name, prompt_save_confirm_btn, prompt_save_cancel_btn],
+        disable_save_option,
+        None,
+        [
+            prompt_save_btn,
+            prompt_save_name,
+            prompt_save_confirm_btn,
+            prompt_save_cancel_btn,
+        ],
     ).then(
-        load_prompt_templates, None, template_selector,
+        load_prompt_templates,
+        None,
+        template_selector,
     )
-    prompt_save_cancel_btn.click(disable_save_option, None, [prompt_save_btn, prompt_save_name, prompt_save_confirm_btn, prompt_save_cancel_btn])
-    
-    
-    textbox.submit(bot_text_generate,
-                   [state, model_selector, textbox, temperature, top_p, repetition_penalty, max_output_tokens, snippet_checkbox, user_prompt, bot_prompt, sep_prompt, stop_token,],
-                   [state, textbox],
+    prompt_save_cancel_btn.click(
+        disable_save_option,
+        None,
+        [
+            prompt_save_btn,
+            prompt_save_name,
+            prompt_save_confirm_btn,
+            prompt_save_cancel_btn,
+        ],
     )
-    send_btn.click(bot_text_generate,
-                   [state, model_selector, textbox, temperature, top_p, repetition_penalty, max_output_tokens, snippet_checkbox, user_prompt, bot_prompt, sep_prompt, stop_token,],
-                   [state, textbox],
+
+    textbox.submit(
+        bot_text_generate,
+        [
+            state,
+            model_selector,
+            textbox,
+            temperature,
+            top_p,
+            repetition_penalty,
+            max_output_tokens,
+            snippet_checkbox,
+            user_prompt,
+            bot_prompt,
+            sep_prompt,
+            stop_token,
+        ],
+        [state, textbox],
     )
-        
+    send_btn.click(
+        bot_text_generate,
+        [
+            state,
+            model_selector,
+            textbox,
+            temperature,
+            top_p,
+            repetition_penalty,
+            max_output_tokens,
+            snippet_checkbox,
+            user_prompt,
+            bot_prompt,
+            sep_prompt,
+            stop_token,
+        ],
+        [state, textbox],
+    )
 
     return (
         state,

@@ -69,9 +69,9 @@ register_conv_template(
 
 
 ### polyglot-ko orca 스타일 학습용
-#아직 없음
+# 아직 없음
 
-#다음은 유저와 어시스턴트의 대화이다. 한국어 대화 형식으로 변환하라. 단순 번역이 아닌, 원문 내용을 참조하여 데이터를 재생성하라.
+# 다음은 유저와 어시스턴트의 대화이다. 한국어 대화 형식으로 변환하라. 단순 번역이 아닌, 원문 내용을 참조하여 데이터를 재생성하라.
 # freewilly2-adosrefine template
 register_conv_template(
     Conversation(
@@ -147,7 +147,7 @@ register_conv_template(
         offset=0,
         sep_style=SeparatorStyle.ADD_COLON_TWO,
         sep="\n\n",
-        sep2="</s>"
+        sep2="</s>",
     )
 )
 

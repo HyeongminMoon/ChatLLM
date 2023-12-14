@@ -4,17 +4,18 @@ import json
 # model_name = "MingAI-70B-chat-orca_v0.4_v0.2_retrained_checkpoint-2-GPTQ"
 # query = "아도스 연봉은 얼마야?"
 
+
 def generate_keyword(
     model_name,
     query,
-    controller_url = "http://localhost:21001",
-    temperature = 0,
-    top_p = 0,
-    repetition_penalty = 1,
-    max_new_tokens = 256,
-    stop_str = ",",
-    stop_token_ids = None,
-    session_id = None,
+    controller_url="http://localhost:21001",
+    temperature=0,
+    top_p=0,
+    repetition_penalty=1,
+    max_new_tokens=256,
+    stop_str=",",
+    stop_token_ids=None,
+    session_id=None,
 ):
     # Query worker address
     ret = requests.post(
@@ -28,11 +29,12 @@ def generate_keyword(
         return []
 
     # Construct Prompt
-    prompt = (f"### System:\nThis is a system prompt, please behave and help the user.\n\n"
-              f"### User: I want you to act as a google search keywords generator. I will speak to you questions. "
-              f"I want you to only reply with a few search sentences based on the questions. "
-              f"You must distinguish each sentence using comma(,)"
-              f"do not write explanations. My first command is {query}\n\n### Assistant:"
+    prompt = (
+        f"### System:\nThis is a system prompt, please behave and help the user.\n\n"
+        f"### User: I want you to act as a google search keywords generator. I will speak to you questions. "
+        f"I want you to only reply with a few search sentences based on the questions. "
+        f"You must distinguish each sentence using comma(,)"
+        f"do not write explanations. My first command is {query}\n\n### Assistant:"
     )
     # Make requests
     gen_params = {
@@ -59,7 +61,7 @@ def generate_keyword(
 
     try:
         data = json.loads(response.text)
-        search_keywords = data['text'].lstrip().split(',')
+        search_keywords = data["text"].lstrip().split(",")
 
         return search_keywords
     except:

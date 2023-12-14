@@ -2,23 +2,22 @@ from enum import IntEnum
 import os
 
 SESSION_CONTROLLER_HEARTBEAT_TIME = 60
-LOGDIR = './logs/OLLM_demo'
+LOGDIR = "./logs/OLLM_demo"
+
 
 class PluginErrorCode(IntEnum):
     NULL = 0
-    
+
     EXCEED_CONTEXT_LENGTH = 10000
     INVALID_INPUT = 10001
-    
+
     # vector store errors
     VECTOR_STORE_ALREADY_EXIST = 50001
     VECTOR_STORE_NOT_EXIST = 50002
-    
+
     # retrievalqa errors
     PROCESSING_DOCS_FAIL = 60001
-    
+
     SESSION_MEMORY_ALREADY_EXIST = 70001
     SESSION_MEMORY_NOT_EXIST = 70002
     EMPTY_SESSION = 70003
-    
-    
