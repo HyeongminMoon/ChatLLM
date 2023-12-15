@@ -119,9 +119,14 @@ def train():
     ) = parser.parse_args_into_dataclasses()
 
     os.makedirs(training_args.output_dir, exist_ok=True)
-    shutil.copy(
-        "train_qlora.sh", os.path.join(training_args.output_dir, "train_qlora.sh")
-    )
+    if lora_args.q_lora:
+        shutil.copy(
+            "train_qlora.sh", os.path.join(training_args.output_dir, "train_qlora.sh")
+        )
+    else:
+        shutil.copy(
+            "train_lora.sh", os.path.join(training_args.output_dir, "train_lora.sh")
+        )
 
     if training_args.flash_attn:
         replace_llama_attn_with_flash_attn()

@@ -29,7 +29,6 @@ import transformers
 from transformers import Trainer, BitsAndBytesConfig, deepspeed
 import torch
 from datasets import Dataset, load_dataset
-from trl import DPOTrainer
 
 from fastchat.train.train import (
     DataArguments,
@@ -40,6 +39,9 @@ from fastchat.train.train import (
 from fastchat.train.llama2_flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
+
+from trl import DPOTrainer
+from fastchat.train.data_modules.dpo_dataset import hankang_DPODataset
 
 
 @dataclass
@@ -175,9 +177,14 @@ def train():
     ) = parser.parse_args_into_dataclasses()
 
     os.makedirs(training_args.output_dir, exist_ok=True)
-    shutil.copy(
-        "train_qlora.sh", os.path.join(training_args.output_dir, "train_qlora.sh")
-    )
+    if lora_args.q_lora:
+        shutil.copy(
+            "train_dpo_qlora.sh", os.path.join(training_args.output_dir, "train_dpo_qlora.sh")
+        )
+    else:
+        shutil.copy(
+            "train_dpo_lora.sh", os.path.join(training_args.output_dir, "train_dpo_lora.sh")
+        )
 
     # 1. load model
     if training_args.flash_attn:
@@ -285,8 +292,10 @@ def train():
 
     # 4. load dataset
     # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
-    train_dataset = get_hh("train", True, False, './cache')
-    eval_dataset = get_hh("test", True, False, './cache')
+    # train_dataset = get_hh("train", True, False, './cache')
+    # eval_dataset = get_hh("test", True, False, './cache')
+    dpo_dataset = hankang_DPODataset()
+    dpo_datamodule = dpo_dataset.make_dpo_data_module()
     
     # 5. initialize the DPO trainer
     # trainer = Trainer(
@@ -300,11 +309,12 @@ def train():
         tokenizer=tokenizer,
         args=training_args,
         beta=dpo_args.beta,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        max_length=dpo_args.model_max_length,
+        # train_dataset=train_dataset,
+        # eval_dataset=eval_dataset,
+        max_length=dpo_args.max_length,
         max_prompt_length=dpo_args.max_prompt_length,
         max_target_length=dpo_args.max_target_length,
+        **dpo_datamodule,
     )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
