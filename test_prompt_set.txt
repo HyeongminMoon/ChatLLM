@@ -1,0 +1,3 @@
+What is 10 minutes after 11:47? give me detailed explanation.
+
+I am ai engineer and I am implementing real-time anomaly detection under the working situation. I tried many methods involving supervised learning, semi-supervised learning, unsupervised learning. And I chose to use CNN model which has input as video. Now I got issue with this. The video has 50 frames, so it can't detect anomaly action real-time, actually it should wait for stacking 50 frames. So if the input video is 5fps, 10 seconds. To make this model can detect real-time. What can I do?

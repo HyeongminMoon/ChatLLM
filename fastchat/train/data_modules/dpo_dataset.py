@@ -9,6 +9,13 @@ def extract_anthropic_prompt(prompt_and_response, search_term="\n\nAssistant:"):
     assert search_term_idx != -1, f"Prompt and response does not contain '{search_term}'"
     return prompt_and_response[: search_term_idx + len(search_term)]
 
+def load_dpo_data_module(dataset_path):
+    dataset = load_dataset(dataset_path)
+    train_dataset = dataset['train']
+    eval_dataset = dataset['test']
+    return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)    
+    
+
 class hankang_DPODataset:
     def __init__(
         self, 

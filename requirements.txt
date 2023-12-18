@@ -12,3 +12,4 @@ gekko
 optimum
 #ray==2.6.3
 trafilatura
+gradio==3.44.3

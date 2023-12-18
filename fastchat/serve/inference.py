@@ -8,6 +8,7 @@ import sys
 import time
 from typing import Iterable, Optional, Dict
 import warnings
+import threading
 
 import psutil
 import torch
@@ -41,6 +42,7 @@ from fastchat.modules.exllama import ExllamaConfig
 from fastchat.modules.xfastertransformer import XftConfig
 from fastchat.utils import is_partial_stop, is_sentence_complete, get_context_length
 
+stop_event = threading.Event()
 
 def prepare_logits_processor(
     temperature: float, repetition_penalty: float, top_p: float, top_k: int
@@ -272,6 +274,11 @@ def generate_stream(
                 else:
                     raise ValueError("Invalid stop field type.")
 
+            # stop stream
+            if stop_event.is_set():
+                stop_event.clear()
+                break
+                    
             # Prevent yielding partial stop sequence
             if not partially_stopped:
                 yield {

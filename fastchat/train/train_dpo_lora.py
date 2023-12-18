@@ -41,7 +41,10 @@ from fastchat.train.llama2_flash_attn_monkey_patch import (
 )
 
 from trl import DPOTrainer
-from fastchat.train.data_modules.dpo_dataset import hankang_DPODataset
+from fastchat.train.data_modules.dpo_dataset import (
+    hankang_DPODataset,
+    load_dpo_data_module,
+)
 
 
 @dataclass
@@ -83,12 +86,6 @@ class DPOArguments:
     max_target_length: Optional[int] = field(
         default=128, metadata={"help": "Only used for encoder decoder model. Max target of each sample's prompt"}
     )
-
-# /home/ados/anaconda3/envs/fastchat_train_2023dec/lib/python3.10/site-packages/trl/trainer/dpo_trainer.py:255: UserWarning: When using DPODataCollatorWithPadding, you should set `max_length` in the DPOTrainer's init it will be set to `512` by default, but you should do it yourself in the future.
-#   warnings.warn(
-# /home/ados/anaconda3/envs/fastchat_train_2023dec/lib/python3.10/site-packages/trl/trainer/dpo_trainer.py:262: UserWarning: When using DPODataCollatorWithPadding, you should set `max_prompt_length` in the DPOTrainer's init it will be set to `128` by default, but you should do it yourself in the future.
-#   warnings.warn(
-# /home/ados/anaconda3/envs/fastchat_train_2023dec/lib/python3.10/site-packages/trl/trainer/dpo_trainer.py:291: UserWarning: When using DPODataCollatorWithPadding, you should set `remove_unused_columns=False` in your TrainingArguments we have set it for you, but you should do it yourself in the future.
     
 def maybe_zero_3(param):
     if hasattr(param, "ds_id"):
@@ -125,44 +122,6 @@ def get_peft_state_maybe_zero_3(named_params, bias):
     to_return = {k: maybe_zero_3(v) for k, v in to_return.items()}
     return to_return
 
-def extract_anthropic_prompt(prompt_and_response):
-    """Extract the anthropic prompt from a prompt and response pair."""
-    search_term = "\n\nAssistant:"
-    search_term_idx = prompt_and_response.rfind(search_term)
-    assert search_term_idx != -1, f"Prompt and response does not contain '{search_term}'"
-    return prompt_and_response[: search_term_idx + len(search_term)]
-
-
-def get_hh(split: str, sanity_check: bool = False, silent: bool = False, cache_dir: str = None) -> Dataset:
-    """Load the Anthropic Helpful-Harmless dataset from Hugging Face and convert it to the necessary format.
-
-    The dataset is converted to a dictionary with the following structure:
-    {
-        'prompt': List[str],
-        'chosen': List[str],
-        'rejected': List[str],
-    }
-
-    Prompts should be structured as follows:
-      \n\nHuman: <prompt>\n\nAssistant:
-    Multiple turns are allowed, but the prompt should always start with \n\nHuman: and end with \n\nAssistant:.
-    """
-    dataset = load_dataset("Anthropic/hh-rlhf", split=split, cache_dir=cache_dir)
-    if sanity_check:
-        dataset = dataset.select(range(min(len(dataset), 1000)))
-
-    def split_prompt_and_responses(sample) -> Dict[str, str]:
-        prompt = extract_anthropic_prompt(sample["chosen"])
-        return {
-            "prompt": prompt,
-            "chosen": sample["chosen"][len(prompt) :],
-            "rejected": sample["rejected"][len(prompt) :],
-        }
-
-    return dataset.map(split_prompt_and_responses)
-
-
-
 def train():
     # 0. prepare arguments and utilities
     parser = transformers.HfArgumentParser(
@@ -186,6 +145,16 @@ def train():
             "train_dpo_lora.sh", os.path.join(training_args.output_dir, "train_dpo_lora.sh")
         )
 
+    # 4. load dataset
+    # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+    # train_dataset = get_hh("train", True, False, './cache')
+    # eval_dataset = get_hh("test", True, False, './cache')
+    # dpo_dataset = hankang_DPODataset()
+    # dpo_datamodule = dpo_dataset.make_dpo_data_module()
+    dataset = load_dataset('./notebooks/dpo_sample')
+    train_dataset = dataset['train']
+    eval_dataset = dataset['test']
+        
     # 1. load model
     if training_args.flash_attn:
         replace_llama_attn_with_flash_attn()
@@ -290,12 +259,6 @@ def train():
     #     model.resize_token_embeddings(len(tokenizer))
 
 
-    # 4. load dataset
-    # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
-    # train_dataset = get_hh("train", True, False, './cache')
-    # eval_dataset = get_hh("test", True, False, './cache')
-    dpo_dataset = hankang_DPODataset()
-    dpo_datamodule = dpo_dataset.make_dpo_data_module()
     
     # 5. initialize the DPO trainer
     # trainer = Trainer(
@@ -309,12 +272,12 @@ def train():
         tokenizer=tokenizer,
         args=training_args,
         beta=dpo_args.beta,
-        # train_dataset=train_dataset,
-        # eval_dataset=eval_dataset,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
         max_length=dpo_args.max_length,
         max_prompt_length=dpo_args.max_prompt_length,
         max_target_length=dpo_args.max_target_length,
-        **dpo_datamodule,
+        # **dpo_datamodule,
     )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):

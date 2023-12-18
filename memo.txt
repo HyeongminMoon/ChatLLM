@@ -9,6 +9,7 @@ pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu118 --fo
 - vllm
 vllm -> vllm-gptq_hf python setup.py develop
 vllm-gptq_hf_2023dec -> 2023dec
+-> vllm 0.2.4에 병합됨에 따라 다시 vllm
 버그: async_llm_engine의 new_requests_event 부분들 다 지우기
 - requirements.txt
 
@@ -90,3 +91,6 @@ CUDA_VISIBLE_DEVICES=2 python fastchat/serve/model_worker.py --model-path /disk1
 CUDA_VISIBLE_DEVICES=3 python fastchat/serve/model_worker.py --model-path /disk1/data/llm_weights/Llama-2-13b-hf --controller http://localhost:21001 --port 31008 --worker http://localhost:31008
 
 --tokenizer hf-internal-testing/llama-tokenizer
+
+
+## Test Messages

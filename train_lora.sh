@@ -6,7 +6,7 @@ export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
 deepspeed fastchat/train/train_lora_custom.py \
-    --model_name_or_path /workspaces/data/llm_weights/custom_trained/MingAI-70B-chat-orca_v0.5a  \
+    --model_name_or_path /workspaces/data/llm_weights/custom_trained/MingAI-7B-chat-orca_v0.2 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
@@ -14,7 +14,7 @@ deepspeed fastchat/train/train_lora_custom.py \
     --data_path /workspaces/data/llm_datasets/custom/merged_korean_datasets-vicuna-v3.json \
     --output_dir runs/lora_test \
     --num_train_epochs 1 \
-    --max_steps 10 \
+    --max_steps 100 \
     --bf16 True \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
@@ -33,7 +33,7 @@ deepspeed fastchat/train/train_lora_custom.py \
     --tf32 True \
     --model_max_length 4096 \
     --q_lora False \
-    --deepspeed cfg/ZeRO-2-no_offload.json \
+    --deepspeed cfg/axolotl_zero2.json \
     --gradient_checkpointing True \
     --flash_attn True \
     --max_grad_norm 1.0 \

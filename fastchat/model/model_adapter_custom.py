@@ -31,7 +31,7 @@ class ChatOrcaAdapter(BaseModelAdapter):
     """The model adapter for chat-orca"""
 
     def match(self, model_path: str):
-        return "chat-orca" in model_path.lower()
+        return "SOLAR-10.7B-Instruct-v1.0" in model_path.lower() or "chat-orca" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
@@ -295,7 +295,42 @@ class KoPolyglotAdapter(BaseModelAdapter):
             }
         return conv_template
 
+class DolphinMixAdapter(BaseModelAdapter):
+    """Model adapter for dolphin-2.5-mixtral-8x7b-GPTQ"""
 
+    def match(self, model_path: str):
+        return "dolphin" in model_path.lower() and "mixtral" in model_path.lower()
+    
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, use_fast=self.use_fast_tokenizer, revision=revision
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
+        ).eval()
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("dolphin-2.2.1-mistral-7b")
+
+class MixtralAdapter(BaseModelAdapter):
+    """The model adapter for Mixtral AI models"""
+
+    def match(self, model_path: str):
+        return "mixtral" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("mistral")
+    
 # orca
 register_model_adapter(ChatOrcaAdapter)
 register_model_adapter(SummarizationOrcaAdapter)
@@ -318,3 +353,5 @@ register_model_adapter(AdosRefineAdapter)
 # others
 register_model_adapter(FreeWilly2Adapter)
 register_model_adapter(Platypus2Adapter)
+register_model_adapter(DolphinMixAdapter)
+register_model_adapter(MixtralAdapter)
