@@ -36,3 +36,4 @@ build
 runs/
 cache/
 notebooks/dpo_sample/
+notebooks/.chroma/
