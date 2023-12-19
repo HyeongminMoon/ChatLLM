@@ -14,7 +14,10 @@ import uuid
 import gradio as gr
 import requests
 
-from fastchat.conversation import SeparatorStyle
+from fastchat.conversation import (
+    SeparatorStyle,
+    list_conv_templates,
+)
 from fastchat.constants import (
     LOGDIR,
     WORKER_API_TIMEOUT,
@@ -91,11 +94,15 @@ openai_compatible_models_info = {}
 
 
 class State:
-    def __init__(self, model_name):
-        self.conv = get_conversation_template(model_name)
+    def __init__(self, model_name, prompt_template=None):
+        if prompt_template:
+            self.conv = get_conversation_template(prompt_template)
+        else:
+            self.conv = get_conversation_template(model_name)
         self.conv_id = uuid.uuid4().hex
         self.skip_next = False
         self.model_name = model_name
+        self.prompt_template = prompt_template
 
         ## ChatMemory
         self.chat_memory = None
@@ -276,13 +283,14 @@ def clear_history(state, request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     if state is not None:
         model_name = state.model_name
+        prompt_template = state.prompt_template
         translator = state.translator
         ts_lang = state.ts_lang
         use_retrievalqa = state.use_retrievalqa
         collector = state.collector
         use_websearch = state.use_websearch
 
-        state = State(model_name)
+        state = State(model_name, prompt_template)
         state.translator = translator
         state.ts_lang = ts_lang
         state.use_retrievalqa = use_retrievalqa
@@ -298,26 +306,26 @@ def clear_all(state, request: gr.Request):
     return (state, [], "") + (disable_btn,) * 6
 
 
-def translate_set(state, model_selector, ts_box, request: gr.Request):
+def translate_set(state, model_selector, prompt_template, ts_box, request: gr.Request):
     logger.info(f"set translator to {ts_box}")
     if state is None:
-        state = State(model_selector)
+        state = State(model_selector, prompt_template)
     state.translator = ts_box
     return state
 
 
-def ts_lang_set(state, model_selector, ts_lang, request: gr.Request):
+def ts_lang_set(state, model_selector, prompt_template, ts_lang, request: gr.Request):
     logger.info(f"set ts_lang to {ts_lang}")
     if state is None:
-        state = State(model_selector)
+        state = State(model_selector, prompt_template)
     state.ts_lang = ts_lang
     return state
 
 
-def retrieval_set(state, model_selector, retrieval_checkbox, request: gr.Request):
+def retrieval_set(state, model_selector, prompt_template, retrieval_checkbox, request: gr.Request):
     logger.info(f"set retrieval_checkbox to {retrieval_checkbox}")
     if state is None:
-        state = State(model_selector)
+        state = State(model_selector, prompt_template)
     # if state.use_websearch:
     #     log_msg = "이 플러그인은 WebSearch 플러그인과 함께 사용할 수 없습니다. 해당 플러그인을 해제 후 다시 시도하시기 바랍니다."
     #     return state, log_msg, False
@@ -382,10 +390,10 @@ def retrieval_urls_upload(
     return
 
 
-def websearch_set(state, model_selector, websearch_checkbox, request: gr.Request):
+def websearch_set(state, model_selector, prompt_template, websearch_checkbox, request: gr.Request):
     logger.info(f"set websearch_checkbox to {websearch_checkbox}")
     if state is None:
-        state = State(model_selector)
+        state = State(model_selector, prompt_template)
 
     # if state.use_retrievalqa:
     #     log_msg = "이 플러그인은 retrievalQA 플러그인과 함께 사용할 수 없습니다. 해당 플러그인을 해제 후 다시 시도하시기 바랍니다."
@@ -401,12 +409,12 @@ def websearch_set(state, model_selector, websearch_checkbox, request: gr.Request
     return state, log_msg, websearch_checkbox
 
 
-def add_text(state, model_selector, text, request: gr.Request):
+def add_text(state, model_selector, prompt_template, text, request: gr.Request):
     ip = request.client.host
     logger.info(f"add_text. ip: {ip}. len: {len(text)}")
 
     if state is None:
-        state = State(model_selector)
+        state = State(model_selector, prompt_template)
 
     if len(text) <= 0:
         state.skip_next = True
@@ -906,8 +914,17 @@ def build_single_model_ui(models, add_promotion_links=False):
             choices=models,
             value=models[0] if len(models) > 0 else "",
             interactive=True,
-            show_label=False,
-            container=False,
+            label="Select Model",
+            # show_label=False,
+            # container=False,
+        )
+        prompt_template = gr.Dropdown(
+            choices=list_conv_templates(),
+            value=None,
+            # interactive=True,
+            label="Template(option)",
+            # show_label=False,
+            # container=False,
         )
 
     chatbot = gr.Chatbot(
@@ -1070,28 +1087,29 @@ def build_single_model_ui(models, add_promotion_links=False):
     clear_btn.click(clear_history, state, [state, chatbot, textbox] + btn_list)
 
     model_selector.change(clear_all, state, [state, chatbot, textbox] + btn_list)
+    prompt_template.change(clear_all, state, [state, chatbot, textbox] + btn_list)
 
     textbox.submit(
-        add_text, [state, model_selector, textbox], [state, chatbot, textbox] + btn_list
+        add_text, [state, model_selector, prompt_template, textbox], [state, chatbot, textbox] + btn_list
     ).then(
         bot_response,
         [state, temperature, top_p, repetition_penalty, max_output_tokens],
         [state, chatbot] + btn_list,
     )
     send_btn.click(
-        add_text, [state, model_selector, textbox], [state, chatbot, textbox] + btn_list
+        add_text, [state, model_selector, prompt_template, textbox], [state, chatbot, textbox] + btn_list
     ).then(
         bot_response,
         [state, temperature, top_p, repetition_penalty, max_output_tokens],
         [state, chatbot] + btn_list,
     )
 
-    ts_box.change(translate_set, [state, model_selector, ts_box], state)
-    ts_lang.change(ts_lang_set, [state, model_selector, ts_lang], state)
+    ts_box.change(translate_set, [state, model_selector, prompt_template, ts_box], state)
+    ts_lang.change(ts_lang_set, [state, model_selector, prompt_template, ts_lang], state)
 
     retrieval_checkbox.change(
         retrieval_set,
-        [state, model_selector, retrieval_checkbox],
+        [state, model_selector, prompt_template, retrieval_checkbox],
         [state, retrieval_log, retrieval_checkbox],
     )
     retrieval_text_upload_btn.click(
@@ -1112,7 +1130,7 @@ def build_single_model_ui(models, add_promotion_links=False):
 
     websearch_checkbox.change(
         websearch_set,
-        [state, model_selector, websearch_checkbox],
+        [state, model_selector, prompt_template, websearch_checkbox],
         [state, websearch_log, websearch_checkbox],
     )
 
