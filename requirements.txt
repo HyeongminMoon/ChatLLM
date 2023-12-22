@@ -15,3 +15,4 @@ trafilatura
 gradio==3.44.3
 docx2txt
 langdetect
+fastText @ git+https://github.com/facebookresearch/fastText.git
