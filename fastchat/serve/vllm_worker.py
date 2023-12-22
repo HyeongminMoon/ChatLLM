@@ -294,7 +294,7 @@ if __name__ == "__main__":
         type=lambda s: s.split(","),
         help="Optional display comma separated names",
     )
-    parser.add_argument("--limit-worker-concurrency", type=int, default=1024)
+    parser.add_argument("--limit-worker-concurrency", type=int, default=128)
     parser.add_argument("--no-register", action="store_true")
     parser.add_argument("--num-gpus", type=int, default=1)
     parser.add_argument(

@@ -13,7 +13,7 @@ def generate_refiner(
     temperature=0.7,
     top_p=0.8,
     repetition_penalty=1,
-    max_new_tokens=4096,
+    max_new_tokens=1024,
     stop_str=None,
     stop_token_ids=None,
 ):
@@ -58,7 +58,7 @@ def generate_refiner(
         headers={"User-Agent": "FastChat Client"},
         json=gen_params,
         # stream=True,
-        timeout=100,
+        # timeout=3000,
     )
 
     data = json.loads(response.text)

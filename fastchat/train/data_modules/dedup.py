@@ -8,7 +8,7 @@ from fastchat.conversation import (
 from fastchat.model.model_adapter import get_conversation_template
 import copy
 
-def dedup_dataset(dataset, prompt_template='chat-orca', target_text_len=100, n_results=100, distance_threshold = 0.6):
+def dedup_by_similarity(dataset, prompt_template='chat-orca', target_text_len=100, n_results=100, distance_threshold = 0.6):
     conv = get_conversation_template(prompt_template)
     system_message = conv.system_message
     sep_style = conv.sep_style
