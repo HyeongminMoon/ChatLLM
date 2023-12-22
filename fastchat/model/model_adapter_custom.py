@@ -345,6 +345,32 @@ class llama2dpoAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         conv_template = get_conv_template("starchat")
         return conv_template
+
+class GugugoAdapter(BaseModelAdapter):
+    """The model adapter for Gugugo-koen-7B-V1.1"""
+    def match(self, model_path: str):
+        return "gugugo" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        conv_template = get_conv_template("gugugo_enko")
+        return conv_template
+
+class SynatraAdapter(BaseModelAdapter):
+    """The model adapter for Synatra-7B-v0.3-Translation"""
+    def match(self, model_path: str):
+        return "synatra" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        conv_template = get_conv_template("synatra_enko")
+        return conv_template
     
 # orca
 register_model_adapter(ChatOrcaAdapter)
@@ -371,3 +397,7 @@ register_model_adapter(Platypus2Adapter)
 register_model_adapter(DolphinMixAdapter)
 register_model_adapter(MixtralAdapter)
 register_model_adapter(llama2dpoAdapter)
+
+# translation
+register_model_adapter(GugugoAdapter)
+register_model_adapter(SynatraAdapter)

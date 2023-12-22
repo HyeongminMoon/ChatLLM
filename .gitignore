@@ -38,3 +38,4 @@ cache/
 notebooks/dpo_sample/
 notebooks/.chroma/
 .chroma/
+fastchat/modules/fasttext/

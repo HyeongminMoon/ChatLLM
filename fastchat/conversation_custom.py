@@ -226,3 +226,31 @@ register_conv_template(
         stop_str="<|endoftext|>",
     )
 )
+
+# gugugo template
+register_conv_template(
+    Conversation(
+        name="gugugo_enko",
+        system_message="",
+        roles=("### 영어:", "### 한국어:"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_NEW_LINE_SINGLE,
+        sep="\n",
+        stop_str=["</끝>", "###"],
+    )
+)
+
+# Synatra template
+register_conv_template(
+    Conversation(
+        name="synatra_enko",
+        system_message="<|im_start|>system\n주어진 문장을 한국어로 번역해라.",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_NEW_LINE_SINGLE,
+        sep="<|im_end|>\n",
+        stop_str="<|im_end|>",
+    )
+)
