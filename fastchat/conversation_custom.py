@@ -22,6 +22,14 @@ register_conv_template(
         sep_style=SeparatorStyle.ADD_COLON_TWO,
         sep="\n\n",
         sep2="</s>",
+        tasks={
+            'instruct': "### System:\nYou are an AI assistant, please behave and help the user. Your reply should be based on the context below.\n\nContext:{instruction}",
+            'system_instruct': "### System:\n{system}",
+            'correction':"", #나중에 사용할 것
+            'summarization': "### System:\nYou are an AI assistant, Summarize below sentences.",
+            'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
+            'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
+        }
     )
 )
 

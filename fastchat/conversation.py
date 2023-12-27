@@ -57,6 +57,8 @@ class Conversation:
     stop_str: Union[str, List[str]] = None
     # Stops generation if meeting any token in this list
     stop_token_ids: List[int] = None
+    # custom tasks
+    tasks: Dict[str, str] = None
 
     def get_prompt(self, context=None) -> str:
         """Get the prompt for generation."""

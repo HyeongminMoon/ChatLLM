@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 import json
 import math
 import pathlib
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, List, Union
 
 import numpy as np
 import torch
@@ -47,7 +47,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    data_path: str = field(
+    data_path: Union[List[str], str] = field(
         default=None, metadata={"help": "Path to the training data."}
     )
     eval_data_path: str = field(
@@ -103,13 +103,14 @@ def preprocess(
     sources,
     tokenizer: transformers.PreTrainedTokenizer,
     data_format="vicuna_v1.1",
-    additional_system_message=None,
+    # additional_system_message=None,
+    custom_system_message=None,
 ) -> Dict:
     conv = get_conversation_template(data_format)
     roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
 
-    if additional_system_message is not None:
-        conv.system_message += additional_system_message
+    if custom_system_message is not None:
+        conv.system_message = custom_system_message
 
     # Apply prompt templates
     conversations = []
@@ -222,7 +223,7 @@ class LazySupervisedDataset(Dataset):
         self,
         raw_data,
         tokenizer: transformers.PreTrainedTokenizer,
-        data_format="vicuna",
+        data_format="chat-orca",
     ):
         super(LazySupervisedDataset, self).__init__()
         self.tokenizer = tokenizer
@@ -232,6 +233,7 @@ class LazySupervisedDataset(Dataset):
         self.raw_data = raw_data
         self.cached_data_dict = {}
         self.data_format = data_format
+        self.conv = get_conversation_template(data_format)
 
     def __len__(self):
         return len(self.raw_data)
@@ -241,39 +243,50 @@ class LazySupervisedDataset(Dataset):
             return self.cached_data_dict[i]
 
         data_format = self.data_format
-        additional_system_message = None
-        task_name = self.raw_data[i].get("task_name")
+        # additional_system_message = None
+        custom_system_message = None
+        task_name = None
+        if "task" in self.raw_data[i]:
+            task_name = self.raw_data[i].get("task")
+        elif "task_name" in self.raw_data[i]:
+            task_name = self.raw_data[i].get("task_name")
         if task_name is not None:
             if task_name == "instruct":
-                additional_system_message = (
-                    f" Your reply should be based on the context below.\n\nContext:{self.raw_data[i]['instruction']}"
-                    if data_format == "chat-orca"
-                    else f" 당신의 답변은 아래 맥락에 기반하여 대답해야 합니다.\n\n맥락:{self.raw_data[i]['instruction']}"
-                )
-            if task_name == "enkotranslation":
-                data_format = (
-                    "enkotranslation-orca"
-                    if data_format == "chat-orca"
-                    else "enkotranslation-ko-orca"
-                )
-            if task_name == "koentranslation":
-                data_format = (
-                    "koentranslation-orca"
-                    if data_format == "chat-orca"
-                    else "koentranslation-ko-orca"
-                )
-            if task_name == "summarization":
-                data_format = (
-                    "summarization-orca"
-                    if data_format == "chat-orca"
-                    else "summarization-ko-orca"
-                )
+                custom_system_message = self.conv.tasks[task_name].format(instruction=self.raw_data[i]['instruction'])
+            elif task_name == "system_instruct":
+                custom_system_message = self.conv.tasks[task_name].format(system=self.raw_data[i]['system'])
+            else:
+                custom_system_message = self.conv.tasks[task_name]
+                
+            #     additional_system_message = (
+            #         f" Your reply should be based on the context below.\n\nContext:{self.raw_data[i]['instruction']}"
+            #         if data_format == "chat-orca"
+            #         else f" 당신의 답변은 아래 맥락에 기반하여 대답해야 합니다.\n\n맥락:{self.raw_data[i]['instruction']}"
+            #     )
+            # if task_name == "enkotranslation":
+            #     data_format = (
+            #         "enkotranslation-orca"
+            #         if data_format == "chat-orca"
+            #         else "enkotranslation-ko-orca"
+            #     )
+            # if task_name == "koentranslation":
+            #     data_format = (
+            #         "koentranslation-orca"
+            #         if data_format == "chat-orca"
+            #         else "koentranslation-ko-orca"
+            #     )
+            # if task_name == "summarization":
+            #     data_format = (
+            #         "summarization-orca"
+            #         if data_format == "chat-orca"
+            #         else "summarization-ko-orca"
+            #     )
 
         ret = preprocess(
             [self.raw_data[i]["conversations"]],
             self.tokenizer,
             data_format,
-            additional_system_message=additional_system_message,
+            custom_system_message=custom_system_message,
         )
         ret = dict(
             input_ids=ret["input_ids"][0],
@@ -284,6 +297,17 @@ class LazySupervisedDataset(Dataset):
 
         return ret
 
+def load_sft_dataset(dataset_path, split='train'):
+    dataset = load_dataset("json", data_files=dataset_path, split=split)
+
+    if "id" not in dataset.features:
+        dataset = dataset.map(lambda x: {"id": "null"})
+
+    if hasattr(dataset.features["id"], "dtype") and dataset.features["id"].dtype == "int64":
+        dataset = dataset.map(lambda x: {"id": "id" + str(x["id"])})
+    
+    return dataset
+    
 
 def make_supervised_data_module(
     tokenizer: transformers.PreTrainedTokenizer, data_args
@@ -294,7 +318,11 @@ def make_supervised_data_module(
     )
     rank0_print("Loading data...")
 
-    train_json = json.load(open(data_args.data_path, "r"))
+    #TODO data_path가 List일 경우, 붙이고 섞기
+    if isinstance(data_args.data_path, list):
+        train_json = concatenate_datasets([load_sft_dataset(path, 'train') for path in data_args.data_path])
+    else:
+        train_json = json.load(open(data_args.data_path, "r"))
     train_dataset = dataset_cls(
         train_json, tokenizer=tokenizer, data_format=data_args.data_format
     )
@@ -304,7 +332,7 @@ def make_supervised_data_module(
         eval_dataset = dataset_cls(
             eval_json, tokenizer=tokenizer, data_format=data_args.data_format
         )
-    else:
+    else:#TODO: split eval
         eval_dataset = None
 
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
