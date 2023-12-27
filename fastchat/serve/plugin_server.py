@@ -360,13 +360,17 @@ async def api_worker_gernate_stream(request: Request):
 @app.post("/worker_generate_auto")
 async def api_worker_generate_auto(request: Request):
     params = await request.json()
-    not_exists = valid_input_checker(params, ["model_name", "user_input", "session_id"])
+    not_exists = valid_input_checker(params, ["model_name", "user_input"]) #"session_id"
     if not_exists:
         return {"err_code": PluginErrorCode.INVALID_INPUT, "err_msg": f"invalid input: {str(not_exists)}"}
     model_name = params["model_name"]
     user_input = params["user_input"]
-    session_id = params["session_id"]
+    # session_id = params["session_id"]
+    session_id = params.get("session_id")
     context = params.get("context")
+    
+    if session_id is None:
+        session_id = random_uuid()
     
     ret = requests.post(
         worker_controller_url + "/get_worker_address", json={"model": model_name}

@@ -15,7 +15,7 @@ from fastchat.conversation import (
 register_conv_template(
     Conversation(
         name="chat-orca",
-        system_message="### System:\nThis is a system prompt, please behave and help the user.",
+        system_message="### System:\nYou are an AI assistant, please behave and help the user.",
         roles=("### User", "### Assistant"),
         messages=(),
         offset=0,
@@ -25,12 +25,13 @@ register_conv_template(
     )
 )
 
+# You are an AI assistant, who knows every language and how to translate one language to another. Given a task, you explain in simple steps what the task is asking, any guidelines that it provides. You solve the task and show how you used the guidelines to solve the task.
 # enkotranslation-orca template
 register_conv_template(
     Conversation(
         name="enkotranslation-orca",
-        system_message="### System:\nThis is a system prompt, Convert english sentences to korean sentences. Regenerate the data by referring to the original content, not just translating it.",
-        roles=("### Instruction", "### Response"),
+        system_message="### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
+        roles=("### Korean", "### English"),
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.ADD_COLON_TWO,
@@ -43,8 +44,8 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="koentranslation-orca",
-        system_message="### System:\nThis is a system prompt, Convert korean sentences to english sentences. Regenerate the data by referring to the original content, not just translating it.",
-        roles=("### Instruction", "### Response"),
+        system_message="### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
+        roles=("### English", "### Korean"),
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.ADD_COLON_TWO,
