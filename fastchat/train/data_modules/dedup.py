@@ -226,9 +226,9 @@ def dedup_too_much_token(dataset):
             output_json = ret.json()
             num_token += output_json['count']
             
-        if num_token > 3500:
-            dedup_flag = True
-            break
+            if num_token > 3500:
+                dedup_flag = True
+                break
 
         # if dedup_flag:
         #     print(conv)
