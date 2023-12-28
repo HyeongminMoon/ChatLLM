@@ -128,6 +128,17 @@ def train():
             "train_lora.sh", os.path.join(training_args.output_dir, "train_lora.sh")
         )
 
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        model_args.model_name_or_path,
+        cache_dir=training_args.cache_dir,
+        model_max_length=training_args.model_max_length,
+        padding_side="right",
+        # use_fast=False,
+    )
+    tokenizer.pad_token = tokenizer.unk_token  # todo: 파라미터화
+    # prepare dataset
+    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+        
     if training_args.flash_attn:
         replace_llama_attn_with_flash_attn()
 
@@ -215,16 +226,8 @@ def train():
     if training_args.gradient_checkpointing:
         model.enable_input_require_grads()
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-        model_max_length=training_args.model_max_length,
-        padding_side="right",
-        # use_fast=False,
-    )
-    tokenizer.pad_token = tokenizer.unk_token  # todo: 파라미터화
-
-    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+    
+    
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,

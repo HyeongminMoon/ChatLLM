@@ -39,6 +39,7 @@ import deepspeed
 from deepspeed import zero
 from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
 
+from datasets import load_dataset, concatenate_datasets 
 
 @dataclass
 class ModelArguments:
@@ -130,8 +131,8 @@ def preprocess(
     input_ids = tokenizer(
         conversations,
         return_tensors="pt",
-        # padding="max_length", #memo todo False=GPTNeox max_length=Llama
-        padding=False,
+        padding="max_length", #memo TODO False=GPTNeox max_length=Llama
+        # padding=False,
         max_length=tokenizer.model_max_length,
         truncation=True,
     ).input_ids
