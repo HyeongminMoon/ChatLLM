@@ -58,7 +58,7 @@ class Conversation:
     # Stops generation if meeting any token in this list
     stop_token_ids: List[int] = None
     # custom tasks
-    tasks: Dict[str, str] = None
+    tasks: Dict[str, str] = dataclasses.field(default_factory=dict)
 
     def get_prompt(self, context=None) -> str:
         """Get the prompt for generation."""
@@ -303,6 +303,7 @@ class Conversation:
             sep2=self.sep2,
             stop_str=self.stop_str,
             stop_token_ids=self.stop_token_ids,
+            tasks=self.tasks,
         )
 
     def dict(self):

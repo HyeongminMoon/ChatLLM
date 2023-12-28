@@ -40,6 +40,9 @@ from deepspeed import zero
 from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
 
 from datasets import load_dataset, concatenate_datasets 
+from fastchat.train.data_modules.dedup import (
+    dedup_non_pair,
+)
 
 @dataclass
 class ModelArguments:
@@ -322,6 +325,7 @@ def make_supervised_data_module(
     #TODO data_path가 List일 경우, 붙이고 섞기
     if isinstance(data_args.data_path, list):
         train_json = concatenate_datasets([load_sft_dataset(path, 'train') for path in data_args.data_path])
+        train_json = dedup_non_pair(train_json)
     else:
         train_json = json.load(open(data_args.data_path, "r"))
     train_dataset = dataset_cls(

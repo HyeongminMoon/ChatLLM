@@ -11,18 +11,17 @@ deepspeed fastchat/train/train_lora_custom.py \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --data_path /data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json /data/llm_datasets/custom/vicuna_format/koalpaca_v1.1-vicuna.json /data/llm_datasets/custom/refined/alpaca-gpt4-korean_dedup2.json /data/llm_datasets/custom/vicuna_format/korquad-chat-vicuna.json /data/llm_datasets/custom/refined/wizardlm_orca_vicuna_dedup2.json /data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json /data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json /data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json /data/llm_datasets/custom/refined/lima_vicuna_format_ko.json /data/llm_datasets/custom/deduped2/aihub_summary_data_tech_dedup-5000.json /data/llm_datasets/custom/deduped2/aihub_summary_data_book-5000.json /data/llm_datasets/custom/deduped2/aihub_summary_data_law-5000.json /data/llm_datasets/custom/deduped2/naver-news-summarization-ko-vicuna_dedup-5000.json /data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(enko)-10000.json /data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(koen)-10000.json \
+    --data_path "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" "/data/llm_datasets/custom/vicuna_format/koalpaca_v1.1-vicuna.json" "/data/llm_datasets/custom/refined/alpaca-gpt4-korean_dedup2.json" "/data/llm_datasets/custom/vicuna_format/korquad-chat-vicuna.json" "/data/llm_datasets/custom/refined/wizardlm_orca_vicuna_dedup2.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/custom/refined/lima_vicuna_format_ko.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_tech_dedup-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_book-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_law-5000.json" "/data/llm_datasets/custom/deduped2/naver-news-summarization-ko-vicuna_dedup-5000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(enko)-10000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(koen)-10000.json" \
     --output_dir runs/DIE_7b_v0.1 \
     --num_train_epochs 1 \
-    --max_steps 100 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 4 \
     --bf16 True \
     --evaluation_strategy "no" \
-    --eval_steps 100  \
+    --eval_steps 1000000  \
     --save_strategy "epoch" \
-    --save_steps 200000 \
+    --save_steps 2000000 \
     --save_total_limit 5 \
     --learning_rate 2e-4 \
     --weight_decay 0. \

@@ -29,7 +29,7 @@ register_conv_template(
             'summarization': "### System:\nYou are an AI assistant, Summarize below sentences.",
             'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
             'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
-        }
+        },
     )
 )
 
