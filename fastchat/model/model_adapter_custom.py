@@ -31,7 +31,10 @@ class ChatOrcaAdapter(BaseModelAdapter):
     """The model adapter for chat-orca"""
 
     def match(self, model_path: str):
-        return "SOLAR-10.7B-Instruct-v1.0" in model_path.lower() or "chat-orca" in model_path.lower()
+        return ("SOLAR-10.7B-Instruct-v1.0" in model_path.lower() 
+                or "chat-orca" in model_path.lower() 
+                or "die" in model_path.lower()
+               )
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)

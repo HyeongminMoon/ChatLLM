@@ -16,6 +16,16 @@ def load_dpo_data_module(dataset_path):
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)    
     
 
+def load_dpo_dataset(dataset_path, split='train'):
+    if dataset_path.endswith("json"):
+        dataset = load_dataset("json", data_files=dataset_path, split=split)
+    elif dataset_path.endswith("parquet"):
+        dataset = load_dataset("parquet", data_files=dataset_path, split=split)
+    else:
+        dataset = load_dataset(dataset_path, split=split)
+        
+    return dataset
+    
 class hankang_DPODataset:
     def __init__(
         self, 
