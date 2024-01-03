@@ -1,0 +1,1 @@
+ps -eo user,pid,cmd|grep "Gugugo"|grep -v grep|awk '{print $2}'|xargs kill -9
