@@ -97,25 +97,31 @@ def dedup_by_similarity(dataset, prompt_template='chat-orca', target_text_len=10
 
     return dataset
 
-def dedup_non_pair(dataset):
+def dedup_non_pair(dataset, data_format='sft'):
     def validate_non_pair(data):
         dedup_flag = False
-        conversations = data['conversations']
-        
-        if len(conversations) == 0: # empty
-            return False
-        
-        if conversations[0]["from"] != 'human': # skip first if it's not human
-            conversations = conversations[1:]
-        
-        for idx, conv in enumerate(conversations): # check right pairs
-            role = conv['from']
-            if idx % 2 == 0 and role != 'human':
-                dedup_flag = True
-                break
-            elif idx % 2 == 1 and role != 'gpt':
-                dedup_flag = True
-                break
+        if data_format == 'sft':
+            conversations = data['conversations']
+
+            if len(conversations) == 0: # empty
+                return False
+
+            if conversations[0]["from"] != 'human': # skip first if it's not human
+                conversations = conversations[1:]
+
+            for idx, conv in enumerate(conversations): # check right pairs
+                role = conv['from']
+                if idx % 2 == 0 and role != 'human':
+                    dedup_flag = True
+                    break
+                elif idx % 2 == 1 and role != 'gpt':
+                    dedup_flag = True
+                    break
+        elif data_format == 'dpo':
+            if data['input'] and data['chosen'] and data['rejected']:
+                return True
+            else:
+                return False
                 
         # if dedup_flag:
         #     print(conv)
@@ -127,13 +133,24 @@ def dedup_non_pair(dataset):
     print(f"{start - len(dataset)}/{start} deduped")
     return dataset
 
-def dedup_repetition(dataset):
+def dedup_repetition(dataset, data_format='sft'):
     def validate_repetition(data):
         dedup_flag = False
-        for conv in data['conversations']:
-            _from = conv['from']
-            _value = conv['value']
-
+        if data_format == 'sft':
+            convs = data['conversations']
+        elif data_format == 'dpo':
+            convs = [data['input'], data['chosen'], data['rejected']]
+        else:
+            print("data_format should be [sft, dpo]")
+            return
+        
+        for conv in convs:
+            if data_format == 'sft':
+                _from = conv['from']
+                _value = conv['value']
+            else:
+                _value = conv
+        
             words = _value.split(" ")
             if len(words) < 3: continue
 
@@ -188,12 +205,23 @@ def dedup_repetition(dataset):
     print(f"{start - len(dataset)}/{start} deduped")
     return dataset
 
-def dedup_math(dataset):
+def dedup_math(dataset, data_format='sft'):
     def validate_math(data):
         dedup_flag = False
-        for conv in data['conversations']:
-            _from = conv['from']
-            _value = conv['value']
+        if data_format == 'sft':
+            convs = data['conversations']
+        elif data_format == 'dpo':
+            convs = [data['input'], data['chosen'], data['rejected']]
+        else:
+            print("data_format should be [sft, dpo]")
+            return
+        
+        for conv in convs:
+            if data_format == 'sft':
+                _from = conv['from']
+                _value = conv['value']
+            else:
+                _value = conv
             words = _value.split("\\")
             if len(words) > 3:
                 dedup_flag = True
@@ -209,12 +237,25 @@ def dedup_math(dataset):
     print(f"{start - len(dataset)}/{start} deduped")
     return dataset
 
-def dedup_too_much_token(dataset):
+def dedup_too_much_token(dataset, data_format='sft', max_token=3800):
+    api_server_url = "http://localhost:41002"
     def validate_too_much_token(data):
         dedup_flag = False
-        for conv in data['conversations']:
-            _from = conv['from']
-            _value = conv['value']
+        if data_format == 'sft':
+            convs = data['conversations']
+        elif data_format == 'dpo':
+            convs = [data['input'], data['chosen'], data['rejected']]
+        else:
+            print("data_format should be [sft, dpo]")
+            return
+        
+        num_token = 0
+        for conv in convs:
+            if data_format == 'sft':
+                _from = conv['from']
+                _value = conv['value']
+            else:
+                _value = conv
             
             input_json = {
                 "model_name": "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ",
@@ -226,7 +267,7 @@ def dedup_too_much_token(dataset):
             output_json = ret.json()
             num_token += output_json['count']
             
-            if num_token > 3500:
+            if num_token > max_token:
                 dedup_flag = True
                 break
 
@@ -241,12 +282,23 @@ def dedup_too_much_token(dataset):
     return dataset
 
 # for sharegpt_ko
-def dedup_short(dataset):
+def dedup_short(dataset, data_format='sft'):
     def validate_short(data):
         dedup_flag = False
-        for conv in data['conversations']:
-            _from = conv['from']
-            _value = conv['value']
+        if data_format == 'sft':
+            convs = data['conversations']
+        elif data_format == 'dpo':
+            convs = [data['input'], data['chosen'], data['rejected']]
+        else:
+            print("data_format should be [sft, dpo]")
+            return
+        
+        for conv in convs:
+            if data_format == 'sft':
+                _from = conv['from']
+                _value = conv['value']
+            else:
+                _value = conv
             
             if len(_value) < 10:
                 dedup_flag = True

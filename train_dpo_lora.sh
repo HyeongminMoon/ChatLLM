@@ -17,10 +17,10 @@ deepspeed fastchat/train/train_dpo_lora.py \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --bf16 True \
-    --evaluation_strategy "steps" \
-    --eval_steps 100  \
+    --evaluation_strategy "no" \
+    --eval_steps 1000000  \
     --save_strategy "epoch" \
-    --save_steps 20000 \
+    --save_steps 2000000 \
     --save_total_limit 5 \
     --learning_rate 2e-5 \
     --weight_decay 0. \

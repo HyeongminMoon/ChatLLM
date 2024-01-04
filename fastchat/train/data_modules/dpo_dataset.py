@@ -17,7 +17,7 @@ def load_dpo_data_module(dataset_path):
     
 
 def load_dpo_dataset(dataset_path, split='train'):
-    if dataset_path.endswith("json"):
+    if dataset_path.endswith("json") or dataset_path.endswith("json.kr"):
         dataset = load_dataset("json", data_files=dataset_path, split=split)
     elif dataset_path.endswith("parquet"):
         dataset = load_dataset("parquet", data_files=dataset_path, split=split)
@@ -25,7 +25,67 @@ def load_dpo_dataset(dataset_path, split='train'):
         dataset = load_dataset(dataset_path, split=split)
         
     return dataset
+
+class ados_DPODataset:
+    def __init__(
+        self, 
+        dataset_path="/data/llm_datasets/custom/ados/dpo/ados_dpo_v2.json",
+        eval_dataset_path = "", #/data/llm_datasets/Ultrafeedback_binarized.ko.hankang/test_prefs.json.kr
+        data_format='chat-orca',
+        # search_term='\n\n### Assistant:',
+        num_train=None,
+        num_eval=None,
+    ):
+        self.dataset_path = dataset_path
+        self.eval_dataset_path = dataset_path
+        if eval_dataset_path:
+            self.eval_dataset_path = eval_dataset_path
+        self.data_format = data_format
+        # self.search_term = search_term
+        self.num_train = num_train
+        self.num_eval = num_eval
     
+    def get_prompt_and_response(self, data):
+        conv = get_conversation_template(self.data_format)
+        if data['system']:
+            conv.system_message = conv.tasks['system_instruct'].format(system=data['system'])
+        conv.append_message(conv.roles[0], data['input'])
+        conv.append_message(conv.roles[1], '')
+        prompt = conv.get_prompt()
+        conv.update_last_message(data['chosen'])
+        chosen = conv.get_prompt()[len(prompt):]
+        conv.update_last_message(data['rejected'])
+        rejected = conv.get_prompt()[len(prompt):]
+        
+        return prompt, chosen, rejected
+    
+    def make_dpo_data_module(self):
+        def split_prompt_and_responses(data) -> Dict[str, str]:
+            prompt, chosen, rejected = self.get_prompt_and_response(data)
+            # prompt = extract_anthropic_prompt(prompt_and_response, self.search_term)
+            # promopt_rejected = extract_anthropic_prompt(prompt_and_response_rejected, self.search_term)
+            return {
+                "prompt": prompt,
+                "chosen": chosen,
+                "rejected": rejected,
+            }
+                             
+        train_dataset = load_dpo_dataset(self.dataset_path)
+        eval_dataset = load_dpo_dataset(self.eval_dataset_path)
+
+        original_columns = list(train_dataset.features.keys())
+        original_columns_eval = list(eval_dataset.features.keys())
+
+        if self.num_train is not None:
+            train_dataset = train_dataset.select(range(min(len(train_dataset), self.num_train)))
+        if self.num_eval is not None:
+            eval_dataset = eval_dataset.select(range(min(len(train_dataset), self.num_eval)))
+
+        train_dataset = train_dataset.map(split_prompt_and_responses, remove_columns=original_columns)
+        eval_dataset = eval_dataset.map(split_prompt_and_responses, remove_columns=original_columns_eval)
+
+        return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
+
 class hankang_DPODataset:
     def __init__(
         self, 
