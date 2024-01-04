@@ -43,6 +43,7 @@ from fastchat.train.llama2_flash_attn_monkey_patch import (
 from trl import DPOTrainer
 from fastchat.train.data_modules.dpo_dataset import (
     hankang_DPODataset,
+    ados_DPODataset,
     load_dpo_data_module,
 )
 
@@ -146,14 +147,10 @@ def train():
         )
 
     # 4. load dataset
-    # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
-    # train_dataset = get_hh("train", True, False, './cache')
-    # eval_dataset = get_hh("test", True, False, './cache')
-    # dpo_dataset = hankang_DPODataset()
-    # dpo_datamodule = dpo_dataset.make_dpo_data_module()
-    dataset = load_dataset('./notebooks/dpo_sample')
-    train_dataset = dataset['train']
-    eval_dataset = dataset['test']
+    dpo_dataset = ados_DPODataset()
+    dpo_datamodule = dpo_dataset.make_dpo_data_module()
+    # train_dataset = dpo_datamodule['train_dataset']
+    # eval_dataset = dpo_datamodule['eval_dataset']
         
     # 1. load model
     if training_args.flash_attn:
@@ -272,12 +269,12 @@ def train():
         tokenizer=tokenizer,
         args=training_args,
         beta=dpo_args.beta,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
+        # train_dataset=train_dataset,
+        # eval_dataset=eval_dataset,
         max_length=dpo_args.max_length,
         max_prompt_length=dpo_args.max_prompt_length,
         max_target_length=dpo_args.max_target_length,
-        # **dpo_datamodule,
+        **dpo_datamodule,
     )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
