@@ -35,13 +35,13 @@ from fastchat.conversation import SeparatorStyle
 worker_controller_url = "http://localhost:21001"
 
 app = FastAPI()
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 logger = build_logger("api_server", f"api_server.log")
 
 class SessionController:

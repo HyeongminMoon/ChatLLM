@@ -28,7 +28,7 @@ deepspeed fastchat/train/train_lora_custom.py \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_strategy "steps" \
-    --logging_steps 50 \
+    --logging_steps 10 \
     --tf32 True \
     --model_max_length 4096 \
     --q_lora False \

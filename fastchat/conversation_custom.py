@@ -23,6 +23,7 @@ register_conv_template(
         sep="\n\n",
         sep2="</s>",
         tasks={
+            'retrieval': "### System:\nYou are an AI assistant, please behave and help the user.\nDate:{date}\nYour reply should be based on the context below.\n\nContext:{instruction}",
             'instruct': "### System:\nYou are an AI assistant, please behave and help the user. Your reply should be based on the context below.\n\nContext:{instruction}",
             'system_instruct': "### System:\n{system}",
             'correction':"", #나중에 사용할 것

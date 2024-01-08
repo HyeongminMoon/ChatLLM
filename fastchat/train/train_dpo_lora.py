@@ -149,8 +149,8 @@ def train():
     # 4. load dataset
     dpo_dataset = ados_DPODataset()
     dpo_datamodule = dpo_dataset.make_dpo_data_module()
-    # train_dataset = dpo_datamodule['train_dataset']
-    # eval_dataset = dpo_datamodule['eval_dataset']
+    # train_dataset = dpo_datamodule['train_dataset'].shuffle(42)
+    # eval_dataset = dpo_datamodule['eval_dataset'].shuffle(42)
         
     # 1. load model
     if training_args.flash_attn:

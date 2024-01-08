@@ -6,12 +6,12 @@ export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
 deepspeed fastchat/train/train_dpo_lora.py \
-    --model_name_or_path /workspaces/data/llm_weights/custom_trained/DIE_10.7b_v0.1_ep2 \
+    --model_name_or_path /workspaces/data/llm_weights/custom_trained/DIE_10.7b_sft_v4_dpo_v2_ep3 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --output_dir runs/DIE_10.7b_sft_v4_dpo_v2 \
+    --output_dir runs/DIE_10.7b_sft_v4_dpo_v2_continue \
     --num_train_epochs 3 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
@@ -22,7 +22,7 @@ deepspeed fastchat/train/train_dpo_lora.py \
     --save_strategy "epoch" \
     --save_steps 2000000 \
     --save_total_limit 5 \
-    --learning_rate 2e-5 \
+    --learning_rate 2e-6 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \

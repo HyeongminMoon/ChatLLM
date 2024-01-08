@@ -639,11 +639,11 @@ def bot_response(
             #     retrieval_chunks = []
 
         if state.saved_conv is not None:
-            # prompt = state.saved_conv.get_prompt(system_type, retrieval_chunks)
-            prompt = state.saved_conv.get_prompt()
+            prompt = state.saved_conv.get_prompt(task=system_type, context='\n'.join(retrieval_chunks))
+            # prompt = state.saved_conv.get_prompt()
         else:
-            # prompt = state.conv.get_prompt(system_type, retrieval_chunks)
-            prompt = state.conv.get_prompt()
+            prompt = state.conv.get_prompt(task=system_type, context='\n'.join(retrieval_chunks))
+            # prompt = state.conv.get_prompt()
 
         # Set repetition_penalty
         if "t5" in model_name:

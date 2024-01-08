@@ -8,7 +8,7 @@ If you have any changes in mind, please contribute back so the community can ben
 import dataclasses
 from enum import auto, IntEnum
 from typing import List, Any, Dict, Union, Tuple
-
+from datetime import datetime
 
 class SeparatorStyle(IntEnum):
     """Separator styles."""
@@ -60,11 +60,32 @@ class Conversation:
     # custom tasks
     tasks: Dict[str, str] = dataclasses.field(default_factory=dict)
 
-    def get_prompt(self, context=None) -> str:
+    def get_prompt(self, context=None, task=None, system=None) -> str:
         """Get the prompt for generation."""
-        system_prompt = self.system_template.format(system_message=self.system_message)
-        if context:
-            system_prompt += context
+        if task:
+            if task in self.tasks:
+                system_message = self.tasks[task]
+            else:
+                system_message = self.system_message
+            if task == "retrieval":
+                system_message = system_message.format(
+                    date=datetime.now().strftime('%Y-%m-%d %H:%M'),
+                    instruction=context,
+                )
+            elif task == "instruct":
+                system_message = system_message.format(
+                    instruction=context,
+                )
+            elif task == 'system_instruct':
+                system_message = system_message.format(
+                    system=system,
+                )
+            system_prompt = self.system_template.format(system_message=system_message)
+        else:
+            system_prompt = self.system_template.format(system_message=self.system_message)
+            if context:
+                system_prompt += context
+        
         if self.sep_style == SeparatorStyle.ADD_COLON_SINGLE:
             ret = system_prompt + self.sep
             for role, message in self.messages:
