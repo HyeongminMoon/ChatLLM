@@ -25,8 +25,8 @@ from fastchat.serve.gradio_web_server import (
     no_change_btn,
     enable_btn,
     disable_btn,
-    invisible_btn,
-    acknowledgment_md,
+    # invisible_btn,
+    # acknowledgment_md,
     ip_expiration_dict,
     get_ip,
     get_model_description_md,
@@ -139,15 +139,16 @@ def regenerate(state0, state1, request: gr.Request):
 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history (anony). ip: {get_ip(request)}")
-    return (
-        [None] * num_sides
-        + [None] * num_sides
-        + anony_names
-        + [""]
-        + [invisible_btn] * 4
-        + [disable_btn] * 2
-        + [""]
-    )
+    # return (
+    #     [None] * num_sides
+    #     + [None] * num_sides
+    #     + anony_names
+    #     + [""]
+    #     + [invisible_btn] * 4
+    #     + [disable_btn] * 2
+    #     + [""]
+    # )
+    return [None] * num_sides + [None] * num_sides + [""] + [disable_btn] * 7
 
 
 def share_click(state0, state1, model_selector0, model_selector1, request: gr.Request):
@@ -540,7 +541,7 @@ Find out who is the 🥇LLM Champion!
             label="Max output tokens",
         )
 
-    gr.Markdown(acknowledgment_md, elem_id="ack_markdown")
+    # gr.Markdown(acknowledgment_md, elem_id="ack_markdown")
 
     # Register listeners
     btn_list = [

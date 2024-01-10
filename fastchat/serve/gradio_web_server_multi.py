@@ -61,10 +61,10 @@ def load_demo(url_params, request: gr.Request):
 
     if args.model_list_mode == "reload":
         if args.anony_only_for_proprietary_model:
-            models = get_model_list(args.controller_url, False, False, False)
+            models = get_model_list(args.controller_url, False, False, False, False)
         else:
             models = get_model_list(
-                args.controller_url, args.add_chatgpt, args.add_claude, args.add_palm
+                args.controller_url, args.register_openai_compatible_models, args.add_chatgpt, args.add_claude, args.add_palm
             )
 
     single_updates = load_demo_single(models, url_params)
@@ -265,6 +265,11 @@ if __name__ == "__main__":
         help='Set the gradio authentication file path. The file should contain one or more user:password pairs in this format: "u1:p1,u2:p2,u3:p3"',
         default=None,
     )
+    parser.add_argument(
+        "--register-openai-compatible-models",
+        type=str,
+        help="Register custom OpenAI API compatible models by loading them from a JSON file",
+    )
     parser.add_argument("--elo-results-file", type=str)
     parser.add_argument("--leaderboard-table-file", type=str)
     args = parser.parse_args()
@@ -276,10 +281,14 @@ if __name__ == "__main__":
     set_global_vars_anony(args.moderate)
     set_global_vars_pte(args.controller_url, args.moderate)
     if args.anony_only_for_proprietary_model:
-        models = get_model_list(args.controller_url, False, False, False)
+        models = get_model_list(args.controller_url, False, False, False, False)
     else:
         models = get_model_list(
-            args.controller_url, args.add_chatgpt, args.add_claude, args.add_palm
+            args.controller_url, 
+            args.register_openai_compatible_models, 
+            args.add_chatgpt, 
+            args.add_claude, 
+            args.add_palm,
         )
 
     # Set authorization credentials

@@ -305,6 +305,8 @@ def clear_all(state, request: gr.Request):
     state = None
     return (state, [], "") + (disable_btn,) * 6
 
+def get_ip(request: gr.Request):
+    return request.client.host
 
 def translate_set(state, model_selector, prompt_template, ts_box, request: gr.Request):
     logger.info(f"set translator to {ts_box}")

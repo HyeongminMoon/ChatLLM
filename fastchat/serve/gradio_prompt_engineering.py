@@ -35,7 +35,7 @@ from fastchat.serve.gradio_web_server import (
 )
 from fastchat.utils import (
     build_logger,
-    violates_moderation,
+    # violates_moderation,
 )
 
 logger = build_logger("gradio_web_server_multi", "gradio_web_server_multi.log")

@@ -9,6 +9,8 @@ import time
 import gradio as gr
 import numpy as np
 
+import requests
+
 from fastchat.constants import (
     MODERATION_MSG,
     CONVERSATION_LIMIT_MSG,
@@ -23,8 +25,8 @@ from fastchat.serve.gradio_web_server import (
     no_change_btn,
     enable_btn,
     disable_btn,
-    invisible_btn,
-    acknowledgment_md,
+    # invisible_btn,
+    # acknowledgment_md,
     get_model_description_md,
     ip_expiration_dict,
     get_ip,
@@ -127,13 +129,14 @@ def regenerate(state0, state1, request: gr.Request):
 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history (named). ip: {get_ip(request)}")
-    return (
-        [None] * num_sides
-        + [None] * num_sides
-        + [""]
-        + [invisible_btn] * 4
-        + [disable_btn] * 2
-    )
+    # return (
+    #     [None] * num_sides
+    #     + [None] * num_sides
+    #     + [""]
+    #     + [invisible_btn] * 4
+    #     + [disable_btn] * 2
+    # )
+    return [None] * num_sides + [None] * num_sides + [""] + [disable_btn] * 7
 
 
 def share_click(state0, state1, model_selector0, model_selector1, request: gr.Request):
@@ -361,7 +364,7 @@ def build_side_by_side_ui_named(models):
             label="Max output tokens",
         )
 
-    gr.Markdown(acknowledgment_md, elem_id="ack_markdown")
+    # gr.Markdown(acknowledgment_md, elem_id="ack_markdown")
 
     # Register listeners
     btn_list = [
