@@ -166,6 +166,21 @@ def oai_moderation(text):
             print(f"MODERATION ERROR: {e}\nInput: {text}")
     return flagged
 
+# legacy
+def violates_moderation(text):
+    """
+    Check whether the text violates OpenAI moderation API.
+    """
+    import openai
+
+    try:
+        flagged = openai.Moderation.create(input=text)["results"][0]["flagged"]
+    except openai.error.OpenAIError as e:
+        flagged = False
+    except (KeyError, IndexError) as e:
+        flagged = False
+
+    return flagged
 
 def moderation_filter(text, model_list):
     MODEL_KEYWORDS = ["claude"]

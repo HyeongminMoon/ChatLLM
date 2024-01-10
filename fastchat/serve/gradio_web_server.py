@@ -899,9 +899,6 @@ def build_single_model_ui(models, add_promotion_links=False):
 # Ados Large Language Models Test Page
 {promotion}
 ## 아래 드롭박스를 통해 대화할 모델을 선택하세요.
-
-* MingAI-70B: Llama2 베이스로 아도스에서 만든 모델
-* Upstage-Llama2-70B: Llama2 베이스로 업스테이지에서 만든 모델. Open LLM 리더보드에서 1위를 달성했었음.
 """
     # ### Terms of use
     # By using this service, users are required to agree to the following terms: The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. **The service collects user dialogue data and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) license.**

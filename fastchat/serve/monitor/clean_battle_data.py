@@ -45,16 +45,16 @@ for i in range(len(IDENTITY_WORDS)):
 
 def get_log_files(max_num_files=None):
     dates = []
-    for month in range(4, 12):
+    for month in range(1, 13):
         for day in range(1, 33):
-            dates.append(f"2023-{month:02d}-{day:02d}")
+            dates.append(f"2024-{month:02d}-{day:02d}")
 
     filenames = []
     for d in dates:
-        for i in range(NUM_SERVERS):
-            name = os.path.expanduser(f"~/fastchat_logs/server{i}/{d}-conv.json")
-            if os.path.exists(name):
-                filenames.append(name)
+        # for i in range(NUM_SERVERS):
+        name = os.path.expanduser(f"./{d}-conv.json")
+        if os.path.exists(name):
+            filenames.append(name)
     max_num_files = max_num_files or len(filenames)
     filenames = filenames[-max_num_files:]
     return filenames
@@ -235,6 +235,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     log_files = get_log_files(args.max_num_files)
+    print(log_files)
     battles = clean_battle_data(log_files, args.exclude_model_names or [])
     last_updated_tstamp = battles[-1]["tstamp"]
     cutoff_date = datetime.datetime.fromtimestamp(
@@ -250,7 +251,7 @@ if __name__ == "__main__":
             ]:
                 del x[key]
         print("Samples:")
-        for i in range(4):
+        for i in range(1):
             print(battles[i])
         output = f"clean_battle_{cutoff_date}.json"
     elif args.mode == "conv_release":

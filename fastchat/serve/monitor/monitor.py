@@ -245,9 +245,11 @@ def build_leaderboard_tab(elo_results_file, leaderboard_table_file):
             plot_4 = gr.Plot(p4, show_label=False)
     """
 
-    from fastchat.serve.gradio_web_server import acknowledgment_md
+    # from fastchat.serve.gradio_web_server import acknowledgment_md
 
-    gr.Markdown(acknowledgment_md)
+    gr.Markdown("""
+    test
+    """)
 
     # return [md_1, plot_1, plot_2, plot_3, plot_4]
     return [md_1]
