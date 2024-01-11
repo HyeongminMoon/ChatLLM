@@ -264,7 +264,35 @@ async def api_list_models(request: Request):
     ret = requests.post(
         worker_controller_url + "/list_models"
     )
-    return ret.json()
+    model_json = ret.json()
+    
+    result_dict = {"models": []}
+    
+    for model in model_json["models"]:
+        if model == "DIE_10.7b_sft_v4_dpo_v2_ep3":
+            result_dict["models"].append({ㅇ
+                "name": "OLLM-Small-2024.01",
+                "model_name": model,
+                "description": (
+                    "선택하신 모델은 OLLM-Small이에요. OLLM-Small은 모델의 크기를 줄여 "
+                    "개인용 그래픽카드에서도 원활히 동작하는 낮은 메모리 사용량과 빠른 속도로 "
+                    "답변을 제공합니다"
+                ),
+            })
+        elif model == "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ":
+            result_dict["models"].append({
+                "name": "OLLM-Large-2023.11",
+                "model_name": model,
+                "description": (
+                    "선택하신 모델은 OLLM-Large에요. OLLM-Large는 보다 질높은 답변을 하며, "
+                    "다른 기술과 연동하여 긴 맥락으로부터 답변하는 상황에 유리해요"
+                ),
+            })
+        
+        # elif model == "":
+        #     result_dict["models"].append()
+        
+    return result_dict
 
 @app.get("/refresh_all_models")
 async def api_refresh_models(request: Request):
