@@ -49,6 +49,28 @@ class ChatOrcaAdapter(BaseModelAdapter):
         }
         return conv_template
 
+### ados ollm
+class AdosOLLMAdapter(BaseModelAdapter):
+    """The model adapter for ados-ollm"""
+
+    def match(self, model_path: str):
+        return ("ados-ollm" in model_path.lower()
+                or model_path in ["DIE_10.7b_sft_v4_dpo_v2_ep3", "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ"]
+               )
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        conv_template = get_conv_template("ados-ollm")
+        conv_template.config = {
+            "max_new_tokens": 4096,
+        }
+        return conv_template
+    
 
 class EnkotranslationOrcaAdapter(BaseModelAdapter):
     """The model adapter for enkotranslation-orca"""
@@ -375,6 +397,10 @@ class SynatraAdapter(BaseModelAdapter):
         conv_template = get_conv_template("synatra_enko")
         return conv_template
     
+# ados models
+register_model_adapter(AdosRefineAdapter)
+register_model_adapter(AdosOLLMAdapter)
+    
 # orca
 register_model_adapter(ChatOrcaAdapter)
 register_model_adapter(SummarizationOrcaAdapter)
@@ -390,9 +416,6 @@ register_model_adapter(EnkotranslationKoOrcaAdapter)
 # korean models
 register_model_adapter(AULMAdapter)
 register_model_adapter(KoPolyglotAdapter)
-
-# ados models
-register_model_adapter(AdosRefineAdapter)
 
 # others
 register_model_adapter(FreeWilly2Adapter)

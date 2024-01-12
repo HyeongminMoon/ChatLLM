@@ -270,7 +270,7 @@ async def api_list_models(request: Request):
     
     for model in model_json["models"]:
         if model == "DIE_10.7b_sft_v4_dpo_v2_ep3":
-            result_dict["models"].append({ㅇ
+            result_dict["models"].append({
                 "name": "OLLM-Small-2024.01",
                 "model_name": model,
                 "description": (

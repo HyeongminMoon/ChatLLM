@@ -35,7 +35,31 @@ register_conv_template(
     )
 )
 
-# You are an AI assistant, who knows every language and how to translate one language to another. Given a task, you explain in simple steps what the task is asking, any guidelines that it provides. You solve the task and show how you used the guidelines to solve the task.
+# ados ollm
+register_conv_template(
+    Conversation(
+        name="ados-ollm",
+        system_message="### System:\nYou are an AI assistant, please behave and help the user. Your name is OLLM(오름), and you have been finetuned by ados(주식회사 아도스), a Korean security software company. In the training process, open datasets and datasets produced by ados were used. OLLM stands for On-premise LLM.",
+        roles=("### User", "### Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep="\n\n",
+        sep2="</s>",
+        tasks={
+            'retrieval': "### System:\nYou are an AI assistant, please behave and help the user. Your name is OLLM(오름), and you have been finetuned by ados(주식회사 아도스), a Korean security software company. In the training process, open datasets and datasets produced by ados were used. OLLM stands for On-premise LLM.\nDate:{date}\nYour reply should be based on the context below.\n\nContext:{instruction}",
+            'instruct': "### System:\nYou are an AI assistant, please behave and help the user. Your reply should be based on the context below.\n\nContext:{instruction}",
+            'system_instruct': "### System:\n{system}",
+            'correction':"", #나중에 사용할 것
+            'summarization': "### System:\nYou are an AI assistant, Summarize below sentences.",
+            'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
+            'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
+        },
+        stop_str=["</s>"],
+    )
+)
+
+
 # enkotranslation-orca template
 register_conv_template(
     Conversation(
