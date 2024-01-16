@@ -147,7 +147,7 @@ def train():
         )
 
     # 4. load dataset
-    dpo_dataset = ados_DPODataset()
+    dpo_dataset = ados_DPODataset("/data/llm_datasets/custom/ados/dpo/ados_mdpo_v2.json")
     dpo_datamodule = dpo_dataset.make_dpo_data_module()
     # train_dataset = dpo_datamodule['train_dataset'].shuffle(42)
     # eval_dataset = dpo_datamodule['eval_dataset'].shuffle(42)

@@ -5,14 +5,14 @@ export MKL_NUM_THREADS=8
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed --master_port=23456 --include localhost:6 fastchat/train/train_dpo_lora.py \
-    --model_name_or_path /data/llm_weights/merged/M-DIE-M-10.7B \
+deepspeed --master_port=11456 --include localhost:4,5,6 fastchat/train/train_dpo_lora.py \
+    --model_name_or_path /data/llm_weights/custom_trained/M-DIE-M-10.7B_gpt4_ep3 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --output_dir runs/M-DIE-M-10.7B_dpo \
-    --num_train_epochs 3 \
+    --output_dir runs/M-DIE-M-10.7B_gpt4_dpo \
+    --num_train_epochs 5 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
@@ -22,7 +22,7 @@ deepspeed --master_port=23456 --include localhost:6 fastchat/train/train_dpo_lor
     --save_strategy "epoch" \
     --save_steps 2000000 \
     --save_total_limit 5 \
-    --learning_rate 5e-6 \
+    --learning_rate 5e-7 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \

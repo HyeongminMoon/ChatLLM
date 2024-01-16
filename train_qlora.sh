@@ -1,28 +1,27 @@
 #!/bin/bash
 export OMP_NUM_THREADS=8
 export MKL_NUM_THREADS=8
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=4
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed fastchat/train/train_lora_custom.py \
-    --model_name_or_path /workspaces/data/llm_weights/custom_trained/MingAI-70B-chat-orca_v0.5a \
+deepspeed --master_port=11000 --include localhost:0,1,2,3,4,5 fastchat/train/train_lora_custom.py \
+    --model_name_or_path /workspaces/disk0/data/llm_weights/MoMo-70B-lora-1.8.4-DPO \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --data_path /workspaces/data/llm_datasets/custom/merged_korean_datasets-vicuna-v3.json \
-    --output_dir runs/training_test\
-    --num_train_epochs 1 \
-    --max_steps 10 \
+    --data_path "/data/llm_datasets/custom/vicuna_format/koalpaca_v1.1-vicuna.json" "/data/llm_datasets/custom/refined/alpaca-gpt4-korean_dedup2.json" "/data/llm_datasets/custom/vicuna_format/korquad-chat-vicuna.json" "/data/llm_datasets/custom/refined/wizardlm_orca_vicuna_dedup2.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/custom/refined/lima_vicuna_format_ko.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_tech_dedup-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_book-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_law-5000.json" "/data/llm_datasets/custom/deduped2/naver-news-summarization-ko-vicuna_dedup-5000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(enko)-10000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(koen)-10000.json" "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" \
+    --output_dir runs/DIE-70B \
+    --num_train_epochs 3 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --bf16 True \
     --evaluation_strategy "no" \
-    --eval_steps 100  \
-    --save_strategy "epoch" \
-    --save_steps 2 \
+    --eval_steps 1000000  \
+    --save_strategy "no" \
+    --save_steps 1000000 \
     --save_total_limit 5 \
     --learning_rate 2e-4 \
     --weight_decay 0. \
@@ -38,7 +37,9 @@ deepspeed fastchat/train/train_lora_custom.py \
     --flash_attn True \
     --max_grad_norm 1.0 \
     --lazy_preprocess True \
-    --data_format 'chat-orca'
+    --data_format 'chat-orca' \
+    --load_in_8bit False \
+    --padding_side "right"
     
 # 7b, batch size1, 17201MB, 24h
 # 7b, batch size1, flash_attn, 8889MB, 13h
