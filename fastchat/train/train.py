@@ -142,46 +142,87 @@ def preprocess(
     ).input_ids
     targets = input_ids.clone()
 
-    assert conv.sep_style == SeparatorStyle.ADD_COLON_TWO
+    assert (conv.sep_style == SeparatorStyle.ADD_COLON_TWO
+            or conv.sep_style == SeparatorStyle.CHATML)
 
-    # Mask targets. Only compute loss on the assistant outputs.
-    sep = conv.sep + conv.roles[1] + ": "
-    for conversation, target in zip(conversations, targets):
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+    if "vicuna" in data_format:
+        # Mask targets. Only compute loss on the assistant outputs.
+        sep = conv.sep + conv.roles[1] + ":"
+        for conversation, target in zip(conversations, targets):
+            total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
-        turns = conversation.split(conv.sep2)
-        cur_len = 1
-        target[:cur_len] = IGNORE_TOKEN_ID
-        for i, turn in enumerate(turns):
-            if turn == "":
-                break
-            turn_len = len(tokenizer(turn).input_ids)
+            turns = conversation.split(conv.sep2)
+            cur_len = 1
+            target[:cur_len] = IGNORE_TOKEN_ID
+            for i, turn in enumerate(turns):
+                if turn == "":
+                    break
+                turn_len = len(tokenizer(turn).input_ids)# + 1
 
-            parts = turn.split(sep)
-            if len(parts) != 2:
-                break
-            parts[0] += sep
-            # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
-            instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+                parts = turn.split(sep)
+                if len(parts) != 2:
+                    break
+                parts[0] += sep
+                # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
-            # Ignore the user instructions
-            target[cur_len : cur_len + instruction_len] = IGNORE_TOKEN_ID
-            cur_len += turn_len
+                # Ignore the user instructions
+                target[cur_len : cur_len + instruction_len] = IGNORE_TOKEN_ID # + 1
+                cur_len += turn_len
 
-        target[cur_len:] = IGNORE_TOKEN_ID
+            target[cur_len:] = IGNORE_TOKEN_ID
 
-        if False:  # Inspect and check the correctness of masking
-            z = target.clone()
-            z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
-            rank0_print(tokenizer.decode(z))
+            if False:  # Inspect and check the correctness of masking
+                z = target.clone()
+                z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
+                rank0_print(tokenizer.decode(z))
 
-        if cur_len < tokenizer.model_max_length:
-            if cur_len != total_len:
-                target[:] = IGNORE_TOKEN_ID
-                rank0_print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+            if cur_len < tokenizer.model_max_length:
+                if cur_len != total_len:
+                    target[:] = IGNORE_TOKEN_ID
+                    rank0_print(
+                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                        f" (ignored)"
+                    )
+    elif "orca-chat" in data_format:
+        # Mask targets. Only compute loss on the assistant outputs.
+        sep = conv.sep + conv.roles[1] + ": "
+        for conversation, target in zip(conversations, targets):
+            total_len = int(target.ne(tokenizer.pad_token_id).sum())
+
+            turns = conversation.split(conv.sep2)
+            cur_len = 0
+            target[:cur_len] = IGNORE_TOKEN_ID
+            for i, turn in enumerate(turns):
+                if turn == "":
+                    break
+                turn_len = len(tokenizer(turn).input_ids) + 1
+
+                parts = turn.split(sep)
+                if len(parts) != 2:
+                    break
+                parts[0] += sep
+                # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+
+                # Ignore the user instructions
+                target[cur_len : cur_len + instruction_len + 1] = IGNORE_TOKEN_ID
+                cur_len += turn_len
+
+            target[cur_len:] = IGNORE_TOKEN_ID
+
+            if False:  # Inspect and check the correctness of masking
+                z = target.clone()
+                z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
+                rank0_print(tokenizer.decode(z))
+
+            if cur_len < tokenizer.model_max_length:
+                if cur_len != total_len:
+                    target[:] = IGNORE_TOKEN_ID
+                    rank0_print(
+                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                        f" (ignored)"
+                    )
 
     return dict(
         input_ids=input_ids,
@@ -262,30 +303,6 @@ class LazySupervisedDataset(Dataset):
                 custom_system_message = self.conv.tasks[task_name].format(system=self.raw_data[i]['system'])
             else:
                 custom_system_message = self.conv.tasks[task_name]
-                
-            #     additional_system_message = (
-            #         f" Your reply should be based on the context below.\n\nContext:{self.raw_data[i]['instruction']}"
-            #         if data_format == "chat-orca"
-            #         else f" 당신의 답변은 아래 맥락에 기반하여 대답해야 합니다.\n\n맥락:{self.raw_data[i]['instruction']}"
-            #     )
-            # if task_name == "enkotranslation":
-            #     data_format = (
-            #         "enkotranslation-orca"
-            #         if data_format == "chat-orca"
-            #         else "enkotranslation-ko-orca"
-            #     )
-            # if task_name == "koentranslation":
-            #     data_format = (
-            #         "koentranslation-orca"
-            #         if data_format == "chat-orca"
-            #         else "koentranslation-ko-orca"
-            #     )
-            # if task_name == "summarization":
-            #     data_format = (
-            #         "summarization-orca"
-            #         if data_format == "chat-orca"
-            #         else "summarization-ko-orca"
-            #     )
 
         ret = preprocess(
             [self.raw_data[i]["conversations"]],
