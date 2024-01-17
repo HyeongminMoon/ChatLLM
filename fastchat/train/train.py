@@ -117,6 +117,56 @@ def preprocess(
     if custom_system_message is not None:
         conv.system_message = custom_system_message
 
+    # Apply prompt templates for qwen
+    if data_format == "qwen":
+        assert tokenizer("<|im_end|>").input_ids[0] == 151645
+        
+        max_len = tokenizer.model_max_length
+        im_start = 151644
+        im_end = 151645
+        nl_tokens = tokenizer('\n').input_ids
+        _system = tokenizer('system').input_ids + nl_tokens
+        _user = tokenizer('user').input_ids + nl_tokens
+        _assistant = tokenizer('assistant').input_ids + nl_tokens
+
+        # Apply prompt templates
+        input_ids, targets = [], []
+        for i, source in enumerate(sources):
+            if roles[source[0]["from"]] != roles["human"]:
+                source = source[1:]
+
+            input_id, target = [], []
+            system = [im_start] + _system + tokenizer(conv.system_message).input_ids + [im_end] + nl_tokens
+            input_id += system
+            target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
+            assert len(input_id) == len(target)
+            for j, sentence in enumerate(source):
+                role = roles[sentence["from"]]
+                _input_id = tokenizer(role).input_ids + nl_tokens + \
+                    tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
+                input_id += _input_id
+                if role == '<|im_start|>user':
+                    _target = [im_start] + [IGNORE_TOKEN_ID] * (len(_input_id)-3) + [im_end] + nl_tokens
+                elif role == '<|im_start|>assistant':
+                    _target = [im_start] + [IGNORE_TOKEN_ID] * len(tokenizer(role).input_ids) + \
+                        _input_id[len(tokenizer(role).input_ids)+1:-2] + [im_end] + nl_tokens
+                else:
+                    raise NotImplementedError
+                target += _target
+            assert len(input_id) == len(target)
+            input_id += [tokenizer.pad_token_id] * (max_len - len(input_id))
+            target += [IGNORE_TOKEN_ID] * (max_len - len(target))
+            input_ids.append(input_id[:max_len])
+            targets.append(target[:max_len])
+        input_ids = torch.tensor(input_ids, dtype=torch.int)
+        targets = torch.tensor(targets, dtype=torch.int)
+        
+        return dict(
+            input_ids=input_ids,
+            labels=targets,
+            attention_mask=input_ids.ne(tokenizer.pad_token_id),
+        )
+        
     # Apply prompt templates
     conversations = []
     for i, source in enumerate(sources):
@@ -184,7 +234,7 @@ def preprocess(
                         f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
                         f" (ignored)"
                     )
-    elif "orca-chat" in data_format:
+    elif "chat-orca" in data_format:
         # Mask targets. Only compute loss on the assistant outputs.
         sep = conv.sep + conv.roles[1] + ": "
         for conversation, target in zip(conversations, targets):
@@ -223,6 +273,10 @@ def preprocess(
                         f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
                         f" (ignored)"
                     )
+    else:
+        rank0_print(
+            f"WARNING: There's no matched data_format."
+        )
 
     return dict(
         input_ids=input_ids,
