@@ -32,7 +32,7 @@ from fastchat.modules.constant_plugin import (
 
 from fastchat.conversation import SeparatorStyle
 
-worker_controller_url = "http://localhost:21001"
+worker_controller_url = "http://localhost:31001"
 
 app = FastAPI()
 app.add_middleware(
@@ -289,9 +289,10 @@ async def api_list_models(request: Request):
                 ),
             })
         
-        # elif model == "":
-        #     result_dict["models"].append()
+        elif model == "":
+            result_dict["models"].append()
         
+    # return model_json
     return result_dict
 
 @app.get("/refresh_all_models")

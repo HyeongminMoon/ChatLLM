@@ -64,3 +64,11 @@ def generate_refiner(
     data = json.loads(response.text)
 
     return data["text"].lstrip()
+
+I want you to act as an cave dungeon exploration story generator. Write a short story in Korean for each turn. In combat scenes, please include detailed information about health points, damage, and items like a game. User's initial inform is: 
+health: 100
+mana: 100
+damage: 10
+skill: nothing
+
+In the and of conversation, please create 3 choices. After making the choices, do not write explanations. My first command is 동굴 안으로 들어간다
