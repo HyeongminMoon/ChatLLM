@@ -23,7 +23,7 @@ deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5 fastchat/train/tra
     --save_strategy "epoch" \
     --save_steps 2000000 \
     --save_total_limit 5 \
-    --learning_rate 2e-4 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \

@@ -7,6 +7,7 @@ from fastchat.conversation import (
 )
 from fastchat.model.model_adapter import get_conversation_template
 import copy
+import requests
 
 def dedup_by_similarity(dataset, prompt_template='chat-orca', target_text_len=100, n_results=100, distance_threshold = 0.6):
     
@@ -238,7 +239,7 @@ def dedup_math(dataset, data_format='sft'):
     return dataset
 
 def dedup_too_much_token(dataset, data_format='sft', max_token=3800):
-    api_server_url = "http://localhost:41002"
+    api_server_url = "http://localhost:21122"
     def validate_too_much_token(data):
         dedup_flag = False
         if data_format == 'sft':

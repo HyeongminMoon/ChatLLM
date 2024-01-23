@@ -1,28 +1,28 @@
 #!/bin/bash
 export OMP_NUM_THREADS=8
 export MKL_NUM_THREADS=8
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed fastchat/train/train_dpo_lora.py \
-    --model_name_or_path /workspaces/data/llm_weights/custom_trained/MingAI-70B-chat-orca_v0.4_v0.2_retrained_checkpoint-2 \
+deepspeed --master_port=11666 --include localhost:6 fastchat/train/train_dpo_lora.py \
+    --model_name_or_path /data/llm_weights/custom_trained/DIE-MoE-10.7Bx4_v8_gpt_ep3 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
-    --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --output_dir runs/MingAI-70B-chat-orca_v0.4_v0.2_retrained_checkpoint-2_dpo \
+    --lora_target_modules q_proj v_proj k_proj o_proj gate w1 w2 w3 \
+    --output_dir runs/DIE-MoE-10.7Bx4_v8_gpt_dpo_truthy \
     --num_train_epochs 3 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --bf16 True \
     --evaluation_strategy "no" \
-    --eval_steps 10000  \
+    --eval_steps 1000000  \
     --save_strategy "epoch" \
-    --save_steps 20000 \
+    --save_steps 2000000 \
     --save_total_limit 5 \
-    --learning_rate 2e-5 \
+    --learning_rate 5e-7 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -39,7 +39,8 @@ deepspeed fastchat/train/train_dpo_lora.py \
     --beta 0.1 \
     --max_length 4096 \
     --max_prompt_length 4096 \
-    --max_target_length 4096
+    --max_target_length 4096 \
+    --padding_side "right"
     
 # 7b, batch size1, 17201MB, 24h
 # 7b, batch size1, flash_attn, 8889MB, 13h

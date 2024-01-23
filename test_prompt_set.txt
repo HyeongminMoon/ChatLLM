@@ -41,7 +41,7 @@ What is 10 minutes after 11:47? give me detailed explanation.
 What is 10 minutes after 12:57? give me detailed explanation.
 12시 57분의 10분 후는 몇 시인가? 자세한 설명과 함께 풀이하라.
 
-물이 일정하게 흐르는 수도꼭지가 있습니다. 이 수도꼭지에서 500mL 용량의 페트병을 채우는 데에 35초가 걸립니다. 2L 용량의 페트병 4개를 채우는 데에 드는 총 시간을 얼마일까요? 단계별로 천천히 생각하여 정확한 답을 구하세요.
+물이 일정하게 흐르는 수도꼭지가 있습니다. 이 수도꼭지에서 500mL 용량의 페트병을 채우는 데에 35초가 걸립니다. 2L 용량의 페트병 4개를 채우는 데에 드는 총 시간은 얼마일까요? 단계별로 천천히 생각하여 정확한 답을 구하세요.
 
 1,2,3,4,5,6,7,9 이 문자열에는 이상한 부분이 감지되는가? 있다면 그 부분이 어디인지 구체적으로 설명하라.
 
@@ -103,3 +103,6 @@ TODO: 오타테스트 추가하기
 I want you to act as an cave dungeon exploration game. Write in Korean and create two choices in the end. In combat scenes, please include detailed expressions like a game. Do not write any explanations about choices.
 Context:
 당신은 깊은 숲 속의 한 곳에 위치한 오래된 동굴 입구에 도착했습니다. 먼지가 쌓인 입구에는 희미한 빛이 새어나와 있고, 삐걱거리는 소리가 들립니다.
+
+
+English dataset을 기반으로 학습된 Large language model을 한국어 데이터셋으로 fine tuning해서 한국어는 어느정도 자연스럽게 쓸 수 있는 모델을 완성했습니다. 그러나 한국어 지식에 대한 질문을 하면 halluciation이 심합니다. 이 문제를 해결하려면 한국어 wikipedia데이터 등을 학습할 필요성이 있다고 느낍니다. 그러나 wikipedia 등을 학습하기엔 학습량이 너무나 거대합니다. 효율적인 대안이 있을까요?
