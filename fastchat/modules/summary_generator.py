@@ -8,7 +8,7 @@ import json
 def generate_summary(
     model_name,
     query,
-    controller_url="http://localhost:21001",
+    controller_url="http://localhost:31001",
     temperature=0.7,
     top_p=0.8,
     repetition_penalty=1,

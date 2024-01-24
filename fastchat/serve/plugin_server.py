@@ -269,9 +269,10 @@ async def api_list_models(request: Request):
     result_dict = {"models": []}
     
     for model in model_json["models"]:
-        if model == "DIE_10.7b_sft_v4_dpo_v2_ep3":
+        # if model == "M-DIE-M-10.7B_gpt4_ep3": 
+        if "OLLM-Small" in model:
             result_dict["models"].append({
-                "name": "OLLM-Small-2024.01",
+                "name": model,
                 "model_name": model,
                 "description": (
                     "선택하신 모델은 OLLM-Small이에요. OLLM-Small은 모델의 크기를 줄여 "
@@ -279,9 +280,10 @@ async def api_list_models(request: Request):
                     "답변을 제공합니다"
                 ),
             })
-        elif model == "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ":
+        # elif model == "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ":
+        elif "OLLM-Large" in model:
             result_dict["models"].append({
-                "name": "OLLM-Large-2023.11",
+                "name": model,
                 "model_name": model,
                 "description": (
                     "선택하신 모델은 OLLM-Large에요. OLLM-Large는 보다 질높은 답변을 하며, "

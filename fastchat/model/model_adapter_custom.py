@@ -55,7 +55,8 @@ class AdosOLLMAdapter(BaseModelAdapter):
 
     def match(self, model_path: str):
         return ("ados-ollm" in model_path.lower()
-                or model_path in ["DIE_10.7b_sft_v4_dpo_v2_ep3", "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ"]
+                or "OLLM" in model_path
+                or model_path in ["DIE_10.7b_sft_v4_dpo_v2_ep3", "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ", "M-DIE-M-10.7B_gpt4_dpo_ep2"]
                )
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):

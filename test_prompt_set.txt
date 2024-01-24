@@ -106,3 +106,5 @@ Context:
 
 
 English dataset을 기반으로 학습된 Large language model을 한국어 데이터셋으로 fine tuning해서 한국어는 어느정도 자연스럽게 쓸 수 있는 모델을 완성했습니다. 그러나 한국어 지식에 대한 질문을 하면 halluciation이 심합니다. 이 문제를 해결하려면 한국어 wikipedia데이터 등을 학습할 필요성이 있다고 느낍니다. 그러나 wikipedia 등을 학습하기엔 학습량이 너무나 거대합니다. 효율적인 대안이 있을까요?
+
+com c++ 사용법
