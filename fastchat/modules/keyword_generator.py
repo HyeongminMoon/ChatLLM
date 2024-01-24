@@ -13,7 +13,7 @@ def generate_keyword(
     top_p=0,
     repetition_penalty=1,
     max_new_tokens=256,
-    stop_str=",",
+    stop_str=[",", "\n"],
     stop_token_ids=None,
     session_id=None,
 ):
@@ -27,14 +27,16 @@ def generate_keyword(
     # No available worker
     if worker_addr == "":
         return []
-
+    
+    # I want you to act as a google search keywords generator. I will speak to you questions. do not write explanations. I want you to only reply with a few search sentences based on the questions. You must distinguish each sentence using comma(,). do not write explanations. only answer with search term. My first command is 2024년에 변화되는 세금정책을 알려줘
+    
     # Construct Prompt
     prompt = (
         f"### System:\nThis is a system prompt, please behave and help the user.\n\n"
         f"### User: I want you to act as a google search keywords generator. I will speak to you questions. "
-        f"I want you to only reply with a few search sentences based on the questions. "
-        f"You must distinguish each sentence using comma(,)"
-        f"do not write explanations. My first command is {query}\n\n### Assistant:"
+        f"do not write explanations. I want you to only reply with a few search sentences based on the questions. "
+        f"You must distinguish each sentence using comma(,). do not write explanations. "
+        f"only answer with search term. My first question is \"{query}\"\n\n### Assistant:"
     )
     # Make requests
     gen_params = {
