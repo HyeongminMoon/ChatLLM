@@ -30,6 +30,8 @@ def generate_keyword(
     
     # I want you to act as a google search keywords generator. I will speak to you questions. do not write explanations. I want you to only reply with a few search sentences based on the questions. You must distinguish each sentence using comma(,). do not write explanations. only answer with search term. My first command is 2024년에 변화되는 세금정책을 알려줘
     
+    # I want you to act as a Table of Contents extractor. I will speak to you questions. do not write explanations. I want you to reply with Table of Contents part extracted from the questions. You must keep original text. My first command is ``````
+    
     # Construct Prompt
     prompt = (
         f"### System:\nThis is a system prompt, please behave and help the user.\n\n"

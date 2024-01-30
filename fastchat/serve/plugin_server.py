@@ -219,6 +219,7 @@ def generate_stream_result(model_url, params, is_auto=False):
     with open(get_conv_log_filename(), "a", encoding='utf-8') as fout:
         data = {
             "time": round(time.time(), 4),
+            "model_name": params["model_name"],
             "session_id": params.get("session_id"),
             "prompt": params['prompt'],
             "bot_answer": bot_answer,
@@ -248,6 +249,7 @@ def background_save_task_auto(session_id, params):
             conv = memory["conv"]
             data = {
                 "time": round(time.time(), 4),
+                "model_name": params["model_name"],
                 "session_id": session_id,
                 "prompt": params['prompt'],
                 "bot_answer": conv.messages[-1][-1],
@@ -272,7 +274,7 @@ async def api_list_models(request: Request):
         # if model == "M-DIE-M-10.7B_gpt4_ep3": 
         if "OLLM-Small" in model:
             result_dict["models"].append({
-                "name": model,
+                "name": "OLLM-Small",
                 "model_name": model,
                 "description": (
                     "선택하신 모델은 OLLM-Small이에요. OLLM-Small은 모델의 크기를 줄여 "
@@ -280,19 +282,18 @@ async def api_list_models(request: Request):
                     "답변을 제공합니다"
                 ),
             })
+            
+    for model in model_json["models"]:
         # elif model == "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ":
-        elif "OLLM-Large" in model:
+        if "OLLM-Large" in model:
             result_dict["models"].append({
-                "name": model,
+                "name": "OLLM-Large",
                 "model_name": model,
                 "description": (
                     "선택하신 모델은 OLLM-Large에요. OLLM-Large는 보다 질높은 답변을 하며, "
                     "다른 기술과 연동하여 긴 맥락으로부터 답변하는 상황에 유리해요"
                 ),
             })
-        
-        elif model == "":
-            result_dict["models"].append()
         
     # return model_json
     return result_dict

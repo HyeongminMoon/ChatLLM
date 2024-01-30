@@ -11,6 +11,7 @@ vllm -> vllm-gptq_hf python setup.py develop
 vllm-gptq_hf_2023dec -> 2023dec
 -> vllm 0.2.4에 병합됨에 따라 다시 vllm
 버그: async_llm_engine의 new_requests_event 부분들 다 지우기
+버그: llamafied qwen -> llama.py의 bias 수정하기
 - requirements.txt
 
 
