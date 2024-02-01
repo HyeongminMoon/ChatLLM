@@ -195,6 +195,7 @@ def generate_stream_result(model_url, params, is_auto=False):
         model_url + "/worker_generate_stream",
         json=params, 
         stream=True,
+        timeout=5,
     )
     
     bot_answer = ''
