@@ -3,13 +3,14 @@ import os
 
 SESSION_CONTROLLER_HEARTBEAT_TIME = 60
 LOGDIR = "./logs/OLLM_demo"
-
+MAX_INPUT_LENGTH = 5
 
 class PluginErrorCode(IntEnum):
     NULL = 0
 
     EXCEED_CONTEXT_LENGTH = 10000
     INVALID_INPUT = 10001
+    EXCEED_INPUT_LENGTH = 10002
 
     # vector store errors
     VECTOR_STORE_ALREADY_EXIST = 50001

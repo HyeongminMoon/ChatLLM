@@ -51,7 +51,7 @@ register_conv_template(
             'summarization': "### System:\nYou are an AI assistant, Summarize below sentences.",
             'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
             'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
-            'toc_extraction': "### System:\nYou are a Table of Contents extractor. User will speak to you questions. You must reply only with [목차(Table of Contents)] part extracted from the questions. You must keep original text. Do not change original text.And you must not involve [dotted line, page number, 제목(title), content, explanation, summary, predicted]. do not write explanations.",
+            'toc_extraction': "### System:\nYou are a Table of Contents extractor. User will speak to you questions. You must reply only with [목차(Table of Contents)] part extracted from the questions. You must keep original text. Do not change original text.And you must not involve [dotted line, page number, 제목(title), content, explanation, summary, predicted]. When there is no Table of Contents, you must reply with \"없음\". do not write explanations.",
         },
         stop_str=["</s>"],
     )

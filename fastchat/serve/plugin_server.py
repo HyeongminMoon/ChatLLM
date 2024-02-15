@@ -1,5 +1,7 @@
 import argparse
 import requests
+import aiohttp
+import asyncio
 import uvicorn
 import time
 import json
@@ -27,6 +29,7 @@ from vllm.utils import random_uuid
 from fastchat.modules.constant_plugin import (
     LOGDIR,
     SESSION_CONTROLLER_HEARTBEAT_TIME,
+    MAX_INPUT_LENGTH,
     PluginErrorCode,
 )
 
@@ -237,6 +240,18 @@ def valid_input_checker(params, values: List[str]):
             not_exists.append(value)
     return not_exists
 
+def valid_memory_checker(session_id):
+    memory = controller.get_memory(session_id)
+    if memory == PluginErrorCode.SESSION_MEMORY_NOT_EXIST:
+        return False
+    
+    conv =  memory["conv"]
+    # count num of converstaions
+    if len(conv.messages) >= 2 * MAX_INPUT_LENGTH:
+        return True
+    
+    return False
+
 def get_conv_log_filename():
     t = datetime.now()
     os.makedirs(LOGDIR, exist_ok=True)
@@ -367,15 +382,15 @@ async def api_worker_generate(request: Request):
     if not_exists:
         return {"err_code": PluginErrorCode.INVALID_INPUT, "err_msg": f"invalid input: {str(not_exists)}"}
     model_name = params["model_name"]
-    ret = requests.post(
-        worker_controller_url + "/get_worker_address", json={"model": model_name}
-    )
-    model_url = ret.json()["address"]
-    ret = requests.post(
-        model_url + "/worker_generate", json=params
-    )
-    return ret.json()
-  
+    async with aiohttp.ClientSession() as session:
+        async with session.post(worker_controller_url + "/get_worker_address", json={"model": model_name}) as resp:
+            ret = await resp.json()
+            model_url = ret["address"]
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(model_url + "/worker_generate", json=params) as ret:
+            return await ret.json()
+
 @app.post("/worker_generate_stream")
 async def api_worker_gernate_stream(request: Request):
     params = await request.json()
@@ -482,11 +497,16 @@ async def api_worker_gernate_stream_auto(request: Request):
         memory = controller.get_memory(session_id)
     
     conv =  memory["conv"]
+    # count num of converstaions
+    if valid_memory_checker(session_id):
+        return {"err_code": PluginErrorCode.EXCEED_INPUT_LENGTH}
+    
     conv.append_message(conv.roles[0], user_input)
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt(context=context)
     memory["last_prompt"] = prompt
     params["prompt"] = prompt
+    
     # count_token
     ret = requests.post(
         model_url + "/model_details"
@@ -641,6 +661,9 @@ async def api_generate_keyword(request: Request):
     session_id = params["session_id"]
     # params["request_id"] = session_id
     
+    if valid_memory_checker(session_id):
+        return {"err_code": PluginErrorCode.EXCEED_INPUT_LENGTH}
+    
     search_keywords = generate_keyword(
         model_name, 
         query, 
@@ -658,6 +681,9 @@ async def api_websearch_run_all(request: Request):
     model_name = params["model_name"]
     session_id = params["session_id"]
     search_keyword = params["search_keyword"]
+    
+    if valid_memory_checker(session_id):
+        return {"err_code": PluginErrorCode.EXCEED_INPUT_LENGTH}
     
     vector_store = controller.get_vector_store(session_id)
     if vector_store == PluginErrorCode.VECTOR_STORE_NOT_EXIST:
@@ -719,6 +745,9 @@ async def api_retrievalqa_get_result(request: Request):
         return {"err_code": PluginErrorCode.INVALID_INPUT, "err_msg": f"invalid input: {str(not_exists)}"}
     session_id = params["session_id"]
     query = params["query"]
+    
+    if valid_memory_checker(session_id):
+        return {"err_code": PluginErrorCode.EXCEED_INPUT_LENGTH}
     
     vector_store = controller.get_vector_store(session_id)
     if vector_store == PluginErrorCode.VECTOR_STORE_NOT_EXIST:

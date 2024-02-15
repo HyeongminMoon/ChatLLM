@@ -5,22 +5,22 @@ export MKL_NUM_THREADS=8
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5 fastchat/train/train_lora_custom.py \
-    --model_name_or_path /data/llm_weights/merged/DIE-MoE-10.7Bx4_random \
+deepspeed --master_port=16600 --include localhost:6 fastchat/train/train_lora_custom.py \
+    --model_name_or_path /data/llm_weights/custom_trained/M-DIE-M-10.7B_gpt4_ep3 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate w1 w2 w3 \
-    --data_path "/data/llm_datasets/custom/vicuna_format/koalpaca_v1.1-vicuna.json" "/data/llm_datasets/custom/refined/alpaca-gpt4-korean_dedup2.json" "/data/llm_datasets/custom/vicuna_format/korquad-chat-vicuna.json" "/data/llm_datasets/custom/refined/wizardlm_orca_vicuna_dedup2.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/custom/refined/lima_vicuna_format_ko.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_tech_dedup-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_book-5000.json" "/data/llm_datasets/custom/deduped2/aihub_summary_data_law-5000.json" "/data/llm_datasets/custom/deduped2/naver-news-summarization-ko-vicuna_dedup-5000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(enko)-10000.json" "/data/llm_datasets/custom/deduped2/sharegpt_V3_format_translation(koen)-10000.json" "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" \
-    --output_dir runs/DIE-MoE-10.7Bx4_sft \
-    --num_train_epochs 3 \
+    --data_path "/data/llm_datasets/custom/ados/sft/toc_extraction.json" \
+    --output_dir runs/MDIEM-toc3 \
+    --num_train_epochs 2 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --bf16 True \
     --evaluation_strategy "no" \
     --eval_steps 1000000  \
-    --save_strategy "epoch" \
+    --save_strategy "no" \
     --save_steps 2000000 \
     --save_total_limit 5 \
     --learning_rate 2e-4 \
