@@ -294,8 +294,9 @@ def bot_text_generate(
         repetition_penalty,
         top_p,
         max_new_tokens,
+        state.conv_id,
     )
-
+    
     # Update text box
     for data in stream_iter:
         if data["error_code"] == 0:

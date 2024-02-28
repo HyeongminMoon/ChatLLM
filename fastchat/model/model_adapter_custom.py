@@ -470,6 +470,32 @@ class PIEChatAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("qwen")
+
+class CodeLlamaAdapter(BaseModelAdapter):
+    """The model adapter for CodeLlama-70B-Instruct-GPTQ"""
+    def match(self, model_path: str):
+        return "codellama-70b" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        conv_template = get_conv_template("codellama_70b")
+        return conv_template
+    
+class KiquAdapter(BaseModelAdapter):
+    """kiqu-70b-awq"""
+    def match(self, model_path: str):
+        return "kiqu" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        conv_template = get_conv_template("mistral")
+        return conv_template
     
 # ados models
 register_model_adapter(AdosRefineAdapter)
@@ -493,6 +519,7 @@ register_model_adapter(EnkotranslationKoOrcaAdapter)
 # korean models
 register_model_adapter(AULMAdapter)
 register_model_adapter(KoPolyglotAdapter)
+register_model_adapter(KiquAdapter)
 
 # others
 register_model_adapter(FreeWilly2Adapter)
@@ -500,6 +527,7 @@ register_model_adapter(Platypus2Adapter)
 register_model_adapter(DolphinMixAdapter)
 register_model_adapter(MixtralAdapter)
 register_model_adapter(llama2dpoAdapter)
+register_model_adapter(CodeLlamaAdapter)
 
 # translation
 register_model_adapter(GugugoAdapter)

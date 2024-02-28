@@ -136,7 +136,7 @@ def preprocess(
                 source = source[1:]
 
             input_id, target = [], []
-            system = [im_start] + _system + tokenizer(conv.system_message).input_ids + [im_end] + nl_tokens
+            system = tokenizer(conv.system_message).input_ids + [im_end] + nl_tokens
             input_id += system
             target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
             assert len(input_id) == len(target)

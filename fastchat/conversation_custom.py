@@ -311,3 +311,17 @@ register_conv_template(
         stop_str="<|im_end|>",
     )
 )
+
+# CodeLlama 70B template
+register_conv_template(
+    Conversation(
+        name="codellama_70b",
+        system_message="Source: system\n\nYou are a helpful and honest code assistant expert. Please, provide all answers to programming questions <step> ", # in JavaScript in JavaScript
+        roles=("Source: user", "Source: assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.CODE_LLAMA,
+        sep="<step>",
+        stop_str=["EOT: true", "<step>"],
+    )
+)

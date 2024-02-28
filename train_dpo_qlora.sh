@@ -5,13 +5,14 @@ export MKL_NUM_THREADS=8
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed --master_port=11666 --include localhost:6 fastchat/train/train_dpo_lora.py \
-    --model_name_or_path /data/llm_weights/custom_trained/DIE-MoE-10.7Bx4_v8_gpt_ep3 \
+deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5 fastchat/train/train_dpo_lora.py \
+    --model_name_or_path /data/llm_weights/custom_trained/PIE-72B-45000 \
     --lora_r 8 \
-    --lora_alpha 32 \
+    --lora_alpha 16 \
     --lora_dropout 0.05 \
-    --lora_target_modules q_proj v_proj k_proj o_proj gate w1 w2 w3 \
-    --output_dir runs/DIE-MoE-10.7Bx4_v8_gpt_dpo_truthy \
+    --lora_target_modules q_proj v_proj \
+    --data_path "/data/llm_datasets/custom/ados/dpo/ados_dpo_v2.json" \
+    --output_dir runs/PIE-72B-45000_dpo \
     --num_train_epochs 3 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
@@ -19,10 +20,10 @@ deepspeed --master_port=11666 --include localhost:6 fastchat/train/train_dpo_lor
     --bf16 True \
     --evaluation_strategy "no" \
     --eval_steps 1000000  \
-    --save_strategy "epoch" \
-    --save_steps 2000000 \
-    --save_total_limit 5 \
-    --learning_rate 5e-7 \
+    --save_strategy "steps" \
+    --save_steps 10000 \
+    --save_total_limit 12 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -35,7 +36,7 @@ deepspeed --master_port=11666 --include localhost:6 fastchat/train/train_dpo_lor
     --gradient_checkpointing True \
     --flash_attn True \
     --max_grad_norm 1.0 \
-    --data_format 'chat-orca' \
+    --data_format 'qwen' \
     --beta 0.1 \
     --max_length 4096 \
     --max_prompt_length 4096 \

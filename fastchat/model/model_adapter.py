@@ -1996,6 +1996,8 @@ class MetaMathAdapter(BaseModelAdapter):
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
+add_custom_model_adapters()
+
 register_model_adapter(PeftModelAdapter)
 register_model_adapter(StableVicunaAdapter)
 register_model_adapter(VicunaAdapter)
@@ -2071,6 +2073,5 @@ register_model_adapter(DeepseekCoderAdapter)
 register_model_adapter(DeepseekChatAdapter)
 register_model_adapter(MetaMathAdapter)
 
-add_custom_model_adapters()
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
