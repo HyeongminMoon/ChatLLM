@@ -35,7 +35,7 @@ from fastchat.modules.constant_plugin import (
 
 from fastchat.conversation import SeparatorStyle
 
-worker_controller_url = "http://localhost:31001"
+worker_controller_url = "http://localhost:21001"
 
 app = FastAPI()
 app.add_middleware(

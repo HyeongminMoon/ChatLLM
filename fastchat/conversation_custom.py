@@ -52,8 +52,17 @@ register_conv_template(
             'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
             'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
             'toc_extraction': "### System:\nYou are a Table of Contents extractor. User will speak to you questions. You must reply only with [목차(Table of Contents)] part extracted from the questions. You must keep original text. Do not change original text.And you must not involve [dotted line, page number, 제목(title), content, explanation, summary, predicted]. When there is no Table of Contents, you must reply with \"없음\". do not write explanations.",
+            'Front Inference': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Rear Inference': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Middle Word Inference': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Middle Keyword Inference': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Summary Inference': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Rearrange Sentence': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Rearrange Word': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Spelling Correction': "### System:\nYou are an AI assistant, this problem requires you to find and correct grammar errors within the given text. analyze the given text and give the correct sentences.",
+            'Akward Correction': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
         },
-        stop_str=["</s>"],
+        stop_str=["</s>", "###"],
     )
 )
 

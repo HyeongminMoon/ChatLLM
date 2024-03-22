@@ -60,6 +60,7 @@ class DataArguments:
     )
     lazy_preprocess: bool = False
     data_format: str = "vicuna"
+    is_shuffle: bool = True
 
 
 @dataclass
@@ -394,9 +395,10 @@ def make_supervised_data_module(
     )
     rank0_print("Loading data...")
 
-    #TODO data_path가 List일 경우, 붙이고 섞기
     if isinstance(data_args.data_path, list):
-        train_json = concatenate_datasets([load_sft_dataset(path, 'train') for path in data_args.data_path]).shuffle(42)
+        train_json = concatenate_datasets([load_sft_dataset(path, 'train') for path in data_args.data_path])
+        if data_args.is_shuffle:
+            train_json = train_json.shuffle(42)
         train_json = dedup_non_pair(train_json)
     else:
         train_json = json.load(open(data_args.data_path, "r"))

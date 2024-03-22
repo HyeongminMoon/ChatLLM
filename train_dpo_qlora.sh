@@ -5,7 +5,7 @@ export MKL_NUM_THREADS=8
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=16
 
-deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5 fastchat/train/train_dpo_lora.py \
+deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5,6,7 fastchat/train/train_dpo_lora.py \
     --model_name_or_path /data/llm_weights/custom_trained/PIE-72B-45000 \
     --lora_r 8 \
     --lora_alpha 16 \
@@ -21,7 +21,7 @@ deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5 fastchat/train/tra
     --evaluation_strategy "no" \
     --eval_steps 1000000  \
     --save_strategy "steps" \
-    --save_steps 10000 \
+    --save_steps 3000 \
     --save_total_limit 12 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
@@ -30,7 +30,7 @@ deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5 fastchat/train/tra
     --logging_strategy "steps" \
     --logging_steps 10 \
     --tf32 True \
-    --model_max_length 4096 \
+    --model_max_length 3072 \
     --q_lora True \
     --deepspeed cfg/ZeRO-2-no_offload.json \
     --gradient_checkpointing True \
@@ -38,9 +38,9 @@ deepspeed --master_port=11666 --include localhost:0,1,2,3,4,5 fastchat/train/tra
     --max_grad_norm 1.0 \
     --data_format 'qwen' \
     --beta 0.1 \
-    --max_length 4096 \
-    --max_prompt_length 4096 \
-    --max_target_length 4096 \
+    --max_length 3072 \
+    --max_prompt_length 3072 \
+    --max_target_length 3072 \
     --padding_side "right"
     
 # 7b, batch size1, 17201MB, 24h

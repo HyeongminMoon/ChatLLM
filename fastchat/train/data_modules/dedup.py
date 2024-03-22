@@ -238,8 +238,10 @@ def dedup_math(dataset, data_format='sft'):
     print(f"{start - len(dataset)}/{start} deduped")
     return dataset
 
-def dedup_too_much_token(dataset, data_format='sft', max_token=3800):
-    api_server_url = "http://localhost:21122"
+def dedup_too_much_token(dataset, data_format='sft', max_token=3800, 
+                        api_server_url = "http://localhost:21122",
+                        model_name = "M-DIE-M-10.7B_gpt4_ep3-GPTQ"):
+    
     def validate_too_much_token(data):
         dedup_flag = False
         if data_format == 'sft':
@@ -250,6 +252,20 @@ def dedup_too_much_token(dataset, data_format='sft', max_token=3800):
             print("data_format should be [sft, dpo]")
             return
         
+        # do simple test first
+        num_text = 0
+        for conv in convs:
+            if data_format == 'sft':
+                _from = conv['from']
+                _value = conv['value']
+            else:
+                _value = conv
+            
+            num_text += len(_value)
+            
+        if num_text < max_token // 2:
+            return not dedup_flag
+        
         num_token = 0
         for conv in convs:
             if data_format == 'sft':
@@ -259,7 +275,7 @@ def dedup_too_much_token(dataset, data_format='sft', max_token=3800):
                 _value = conv
             
             input_json = {
-                "model_name": "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ",
+                "model_name": model_name,
                 "prompt": _value,
             }
 

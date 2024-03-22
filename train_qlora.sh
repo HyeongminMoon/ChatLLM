@@ -1,34 +1,34 @@
 #!/bin/bash
-export OMP_NUM_THREADS=8
-export MKL_NUM_THREADS=8
+export OMP_NUM_THREADS=32
+export MKL_NUM_THREADS=32
 # export CUDA_VISIBLE_DEVICES=4
 export NCCL_P2P_LEVEL=PIX
-export MAX_JOBS=16
+export MAX_JOBS=64
 
-deepspeed --master_port=16000 --include localhost:0,1,2,3 fastchat/train/train_lora_custom.py \
-    --model_name_or_path /workspaces/disk0/data/llm_weights/MoMo-72B-lora-1.8.7-DPO \
+deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train/train_lora_custom.py \
+    --model_name_or_path /data/llm_weights/custom_trained/M-DIE-M-10.7B_gpt4_ep3/ \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --data_path "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" \
-    --output_dir runs/PIE-72B_v0.2_gpt_evol \
+    --data_path "/data/llm_datasets/sftv5/deduped/korea_spelling_correction.json" "/data/llm_datasets/sftv5/v4_repeat/sharegpt_V3_format_translation(enko)-10000.json" "/data/llm_datasets/sftv5/rebal/kocommercial_mid_word_infer.json" "/data/llm_datasets/sftv5/rebal/mr_tydi_akward_correction.json" "/data/llm_datasets/sftv5/v4_repeat/naver-news-summarization.json" "/data/llm_datasets/sftv5/v4_repeat/koalpaca_v1.1-vicuna.json" "/data/llm_datasets/sftv5/deduped/wiki_qa_mid_key_infer.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rear_infer.json" "/data/llm_datasets/sftv5/v4_repeat/alpaca-gpt4-korean_dedup2.json" "/data/llm_datasets/sftv5/v4_repeat/wizardlm_orca_vicuna_dedup2.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rearrange.json" "/data/llm_datasets/sftv5/deduped/wiki_qa_front_infer.json" "/data/llm_datasets/sftv5/v4_repeat/aihub_law_summary.json" "/data/llm_datasets/sftv5/v4_repeat/korquad-chat-vicuna.json" "/data/llm_datasets/sftv5/v4_repeat/sharegpt_V3_format_translation(koen)-10000.json" "/data/llm_datasets/sftv5/deduped/aihub_tech_sci_summary_infer.json" "/data/llm_datasets/sftv5/v4_repeat/aihub_book_summary.json" "/data/llm_datasets/sftv5/deduped/aihub_interface_spelling_correction.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rearrange_sen.json" \
+    --output_dir runs/DIE-10_7B_sftv5_task \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 1 \
+    --gradient_accumulation_steps 4 \
     --bf16 True \
     --evaluation_strategy "no" \
     --eval_steps 1000000  \
-    --save_strategy "epoch" \
-    --save_steps 5000 \
+    --save_strategy "steps" \
+    --save_steps 500 \
     --save_total_limit 12 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_strategy "steps" \
-    --logging_steps 10 \
+    --logging_steps 1 \
     --tf32 True \
     --model_max_length 4096 \
     --q_lora True \
@@ -37,7 +37,7 @@ deepspeed --master_port=16000 --include localhost:0,1,2,3 fastchat/train/train_l
     --flash_attn True \
     --max_grad_norm 1.0 \
     --lazy_preprocess True \
-    --data_format 'qwen' \
+    --data_format 'chat-orca' \
     --load_in_8bit False \
     --padding_side "right"
 
