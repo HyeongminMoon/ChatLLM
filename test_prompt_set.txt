@@ -32,7 +32,7 @@ A: B 또는 C가 거짓말쟁이야.
 B: 난 거짓말쟁이가 아니야.
 C: A가 거짓말쟁이야.
 D: A 또는 B가 거짓말쟁이야.
-
+정답: A
 
 - 논리수학
 What is 10 minutes after 11:47? give me detailed explanation.

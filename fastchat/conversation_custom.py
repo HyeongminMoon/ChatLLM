@@ -47,7 +47,6 @@ register_conv_template(
             'retrieval': "### System:\nYou are an AI assistant, please behave and help the user.\nDate:{date}\nYour reply should be based on the context below.\n\nContext:{instruction}",
             'instruct': "### System:\nYou are an AI assistant, please behave and help the user. Your reply should be based on the context below.\n\nContext:{instruction}",
             'system_instruct': "### System:\n{system}",
-            'correction':"", #나중에 사용할 것
             'summarization': "### System:\nYou are an AI assistant, Summarize below sentences.",
             'enkotranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert english sentences to korean sentences. do not write explanations.",
             'koentranslation': "### System:\nYou are an AI translator, who knows every language and how to translate one language to another. convert korean sentences to english sentences. do not write explanations.",
@@ -61,6 +60,7 @@ register_conv_template(
             'Rearrange Word': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
             'Spelling Correction': "### System:\nYou are an AI assistant, this problem requires you to find and correct grammar errors within the given text. analyze the given text and give the correct sentences.",
             'Akward Correction': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
+            'Translation': "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions.",
         },
         stop_str=["</s>", "###"],
     )

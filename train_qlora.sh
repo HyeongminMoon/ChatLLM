@@ -6,13 +6,13 @@ export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=64
 
 deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train/train_lora_custom.py \
-    --model_name_or_path /data/llm_weights/custom_trained/M-DIE-M-10.7B_gpt4_ep3/ \
+    --model_name_or_path /data/llm_weights/custom_trained/DIE-10_7B_sftv5_task-5000/ \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --data_path "/data/llm_datasets/sftv5/deduped/korea_spelling_correction.json" "/data/llm_datasets/sftv5/v4_repeat/sharegpt_V3_format_translation(enko)-10000.json" "/data/llm_datasets/sftv5/rebal/kocommercial_mid_word_infer.json" "/data/llm_datasets/sftv5/rebal/mr_tydi_akward_correction.json" "/data/llm_datasets/sftv5/v4_repeat/naver-news-summarization.json" "/data/llm_datasets/sftv5/v4_repeat/koalpaca_v1.1-vicuna.json" "/data/llm_datasets/sftv5/deduped/wiki_qa_mid_key_infer.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rear_infer.json" "/data/llm_datasets/sftv5/v4_repeat/alpaca-gpt4-korean_dedup2.json" "/data/llm_datasets/sftv5/v4_repeat/wizardlm_orca_vicuna_dedup2.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rearrange.json" "/data/llm_datasets/sftv5/deduped/wiki_qa_front_infer.json" "/data/llm_datasets/sftv5/v4_repeat/aihub_law_summary.json" "/data/llm_datasets/sftv5/v4_repeat/korquad-chat-vicuna.json" "/data/llm_datasets/sftv5/v4_repeat/sharegpt_V3_format_translation(koen)-10000.json" "/data/llm_datasets/sftv5/deduped/aihub_tech_sci_summary_infer.json" "/data/llm_datasets/sftv5/v4_repeat/aihub_book_summary.json" "/data/llm_datasets/sftv5/deduped/aihub_interface_spelling_correction.json" "/data/llm_datasets/sftv5/rebal/kocommercial_rearrange_sen.json" \
-    --output_dir runs/DIE-10_7B_sftv5_task \
+    --data_path "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/sftv5/v5_task_repeat/sftv5_task_div30.json" \
+    --output_dir runs/DIE-10_7B_sftv5_daily \
     --num_train_epochs 3 \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 1 \
@@ -22,7 +22,7 @@ deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train
     --eval_steps 1000000  \
     --save_strategy "steps" \
     --save_steps 500 \
-    --save_total_limit 12 \
+    --save_total_limit 100 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
@@ -39,7 +39,8 @@ deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train
     --lazy_preprocess True \
     --data_format 'chat-orca' \
     --load_in_8bit False \
-    --padding_side "right"
+    --padding_side "right" \
+    --is_shuffle True
 
 # 7b, batch size1, 23000MB, 23h
 # 7b, batch size1, flash_attn, ZeRO-2, 23000MB, 11h
