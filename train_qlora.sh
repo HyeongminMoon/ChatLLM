@@ -5,8 +5,8 @@ export MKL_NUM_THREADS=32
 export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=64
 
-deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train/train_lora_custom.py \
-    --model_name_or_path /data/llm_weights/custom_trained/DIE-10_7B_sftv5_task-5000/ \
+deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5 fastchat/train/train_lora_custom.py \
+    --model_name_or_path /data/llm_weights/custom_trained/DIE-10_7B_sftv5_task-5500/ \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
@@ -21,7 +21,7 @@ deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5,6,7 fastchat/train
     --evaluation_strategy "no" \
     --eval_steps 1000000  \
     --save_strategy "steps" \
-    --save_steps 500 \
+    --save_steps 100 \
     --save_total_limit 100 \
     --learning_rate 2e-5 \
     --weight_decay 0. \

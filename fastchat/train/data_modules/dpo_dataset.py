@@ -1,6 +1,5 @@
 from typing import Dict, Optional
-from datasets import Dataset, load_dataset
-
+from datasets import Dataset, load_dataset, concatenate_datasets
 from fastchat.model.model_adapter import get_conversation_template
 
 def extract_anthropic_prompt(prompt_and_response, search_term="\n\nAssistant:"):
@@ -47,8 +46,11 @@ class ados_DPODataset:
     
     def get_prompt_and_response(self, data):
         conv = get_conversation_template(self.data_format)
-        if data['system']:
+        if data['task'] == 'dpo_system':
             conv.system_message = conv.tasks['system_instruct'].format(system=data['system'])
+        elif data['task'] == 'dpo_translation':
+            conv.system_message = "### System:\nYou are an AI assistant, generate the most appropriate sentences following the given instructions."
+        #else dpo
         conv.append_message(conv.roles[0], data['input'])
         conv.append_message(conv.roles[1], '')
         prompt = conv.get_prompt()
@@ -70,8 +72,14 @@ class ados_DPODataset:
                 "rejected": rejected,
             }
                              
-        train_dataset = load_dpo_dataset(self.dataset_path)
-        eval_dataset = load_dpo_dataset(self.eval_dataset_path)
+        if isinstance(self.dataset_path, list):
+            train_dataset = concatenate_datasets([load_dpo_dataset(path, 'train') for path in self.dataset_path])
+        else:
+            train_dataset = load_dpo_dataset(self.dataset_path)
+        if isinstance(self.eval_dataset_path, list):
+            eval_dataset = concatenate_datasets([load_dpo_dataset(path, 'train') for path in self.eval_dataset_path])
+        else:
+            eval_dataset = load_dpo_dataset(self.eval_dataset_path)
 
         original_columns = list(train_dataset.features.keys())
         original_columns_eval = list(eval_dataset.features.keys())

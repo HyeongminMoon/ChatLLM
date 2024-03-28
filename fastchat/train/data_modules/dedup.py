@@ -299,7 +299,7 @@ def dedup_too_much_token(dataset, data_format='sft', max_token=3800,
     return dataset
 
 # for sharegpt_ko
-def dedup_short(dataset, data_format='sft'):
+def dedup_short(dataset, data_format='sft', threshold_len=10):
     def validate_short(data):
         dedup_flag = False
         if data_format == 'sft':
@@ -317,7 +317,7 @@ def dedup_short(dataset, data_format='sft'):
             else:
                 _value = conv
             
-            if len(_value) < 10:
+            if len(_value) < threshold_len:
                 dedup_flag = True
                 break
 
