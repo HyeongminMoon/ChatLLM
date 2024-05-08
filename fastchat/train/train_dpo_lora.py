@@ -147,9 +147,7 @@ def train():
         )
 
     # 4. load dataset
-    dpo_dataset = ados_DPODataset(data_args.data_path, data_format=data_args.data_format)
-    if data_args.is_shuffle:
-        dpo_dataset = dpo_dataset.shuffle(42)
+    dpo_dataset = ados_DPODataset(data_args.data_path, data_format=data_args.data_format, shuffle=data_args.is_shuffle)
     dpo_datamodule = dpo_dataset.make_dpo_data_module()
     # train_dataset = dpo_datamodule['train_dataset'].shuffle(42)
     # eval_dataset = dpo_datamodule['eval_dataset'].shuffle(42)

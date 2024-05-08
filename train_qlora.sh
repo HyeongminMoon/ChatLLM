@@ -6,29 +6,29 @@ export NCCL_P2P_LEVEL=PIX
 export MAX_JOBS=64
 
 deepspeed --master_port=16000 --include localhost:0,1,2,3,4,5 fastchat/train/train_lora_custom.py \
-    --model_name_or_path /data/llm_weights/custom_trained/DIE-10_7B_sftv5_task-5500/ \
+    --model_name_or_path /workspaces/data/llm_weights/custom_trained/DIE-70B_sftv5_task-96000 \
     --lora_r 8 \
     --lora_alpha 32 \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj v_proj k_proj o_proj gate_proj down_proj up_proj \
-    --data_path "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/sftv5/v5_task_repeat/sftv5_task_div30.json" \
-    --output_dir runs/DIE-10_7B_sftv5_daily \
+    --data_path  "/data/llm_datasets/custom/vicuna_format/gpt_evol_1.3k-vicuna.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_gpt4.json" "/data/llm_datasets/custom/vicuna_format/sharegpt_V3_format_others.json" "/data/llm_datasets/custom/refined/sharegpt_V3_format_ko_selected_dedup2.json" "/data/llm_datasets/sftv5/v5_task_repeat/sftv5_task_div30.json" \
+    --output_dir runs/DIE-70B_sftv5_daily \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 1 \
     --bf16 True \
     --evaluation_strategy "no" \
-    --eval_steps 1000000  \
-    --save_strategy "steps" \
-    --save_steps 100 \
+    --eval_steps 1000000 \
+    --save_strategy "epoch" \
+    --save_steps 16000 \
     --save_total_limit 100 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_strategy "steps" \
-    --logging_steps 1 \
+    --logging_steps 10 \
     --tf32 True \
     --model_max_length 4096 \
     --q_lora True \

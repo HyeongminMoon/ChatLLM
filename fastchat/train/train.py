@@ -270,14 +270,16 @@ def preprocess(
             if cur_len < tokenizer.model_max_length:
                 if cur_len != total_len:
                     target[:] = IGNORE_TOKEN_ID
-                    rank0_print(
-                        f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                        f" (ignored)"
-                    )
+                    # rank0_print(
+                    #     f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                    #     f" (ignored)"
+                    # )
+                    print(f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}.")
     else:
-        rank0_print(
-            f"WARNING: There's no matched data_format."
-        )
+        # rank0_print(
+        #     f"WARNING: There's no matched data_format."
+        # )
+        print(f"WARNING: There's no matched data_format.")
 
     return dict(
         input_ids=input_ids,

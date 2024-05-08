@@ -34,15 +34,17 @@ class ados_DPODataset:
         # search_term='\n\n### Assistant:',
         num_train=None,
         num_eval=None,
+        shuffle=False,
     ):
         self.dataset_path = dataset_path
-        self.eval_dataset_path = dataset_path
-        if eval_dataset_path:
-            self.eval_dataset_path = eval_dataset_path
+        self.eval_dataset_path = eval_dataset_path
+        # if eval_dataset_path:
+        #     self.eval_dataset_path = eval_dataset_path
         self.data_format = data_format
         # self.search_term = search_term
         self.num_train = num_train
         self.num_eval = num_eval
+        self.shuffle = shuffle
     
     def get_prompt_and_response(self, data):
         conv = get_conversation_template(self.data_format)
@@ -76,22 +78,29 @@ class ados_DPODataset:
             train_dataset = concatenate_datasets([load_dpo_dataset(path, 'train') for path in self.dataset_path])
         else:
             train_dataset = load_dpo_dataset(self.dataset_path)
-        if isinstance(self.eval_dataset_path, list):
-            eval_dataset = concatenate_datasets([load_dpo_dataset(path, 'train') for path in self.eval_dataset_path])
-        else:
-            eval_dataset = load_dpo_dataset(self.eval_dataset_path)
-
+        
         original_columns = list(train_dataset.features.keys())
-        original_columns_eval = list(eval_dataset.features.keys())
-
         if self.num_train is not None:
             train_dataset = train_dataset.select(range(min(len(train_dataset), self.num_train)))
-        if self.num_eval is not None:
-            eval_dataset = eval_dataset.select(range(min(len(train_dataset), self.num_eval)))
-
         train_dataset = train_dataset.map(split_prompt_and_responses, remove_columns=original_columns)
-        eval_dataset = eval_dataset.map(split_prompt_and_responses, remove_columns=original_columns_eval)
+        
+        if self.eval_dataset_path:
+            if isinstance(self.eval_dataset_path, list):
+                eval_dataset = concatenate_datasets([load_dpo_dataset(path, 'train') for path in self.eval_dataset_path])
+            else:
+                eval_dataset = load_dpo_dataset(self.eval_dataset_path)
+            original_columns_eval = list(eval_dataset.features.keys())
+        
+            if self.num_eval is not None:
+                eval_dataset = eval_dataset.select(range(min(len(train_dataset), self.num_eval)))
+                eval_dataset = eval_dataset.map(split_prompt_and_responses, remove_columns=original_columns_eval)
+        else:
+            eval_dataset = train_dataset
 
+        if self.shuffle:
+            train_dataset = train_dataset.shuffle(42)
+            eval_dataset = eval_dataset.shuffle(42)
+        
         return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
 
 class hankang_DPODataset:
