@@ -441,3 +441,10 @@ register_model_info(
     "https://huggingface.co/meta-math",
     "MetaMath is a finetune of Llama2 on [MetaMathQA](https://huggingface.co/datasets/meta-math/MetaMathQA) that specializes in mathematical reasoning.",
 )
+
+register_model_info(
+    ["Meta-Llama-3-8B-Instruct", "Meta-Llama-3-70B-Instruct"],
+    "llama-3",
+    "https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct",
+    "Meta developed and released the Meta Llama 3 family of large language models (LLMs), a collection of pretrained and instruction tuned generative text models in 8 and 70B sizes.",
+)

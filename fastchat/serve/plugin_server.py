@@ -211,9 +211,11 @@ def generate_stream_result(model_url, params, is_auto=False):
                     bot_answer = data["text"].split(f"{conv.roles[1]}:")[-1]
                 elif conv.sep_style == SeparatorStyle.ADD_NEW_LINE_SINGLE:
                     bot_answer = data["text"].split(f"{conv.roles[1]}\n")[-1]
+                elif conv.sep_style == SeparatorStyle.LLAMA3:
+                    bot_answer = data["text"].split(f"{conv.roles[1]}<|end_header_id|>\n\n")[-1]
                 else:
                     bot_answer = data["text"].split(f"{conv.roles[1]}")
-                    logger.warn("There's no defined split method for bot_answer")
+                    logger.warn(f"There's no defined split method for bot_answer({conv.sep_style})")
                 conv.update_last_message(bot_answer)
                 yield json.dumps({"text": bot_answer}).encode() + b"\0"
             else:
@@ -308,6 +310,18 @@ async def api_list_models(request: Request):
                 "description": (
                     "선택하신 모델은 OLLM-Large에요. OLLM-Large는 보다 질높은 답변을 하며, "
                     "다른 기술과 연동하여 긴 맥락으로부터 답변하는 상황에 유리해요"
+                ),
+            })
+            
+    for model in model_json["models"]:
+        # elif model == "MingAI-70B-chat-orca_v0.42_2_dpo-GPTQ":
+        if "llama-3" in model.lower():
+            result_dict["models"].append({
+                "name": "Llama-3",
+                "model_name": model,
+                "description": (
+                    "선택하신 모델은 Llama-3-for-OLLM에요. Llama-3는 2024년 4월 공개된 메타의 신규 LLM 모델이며 "
+                    "현재 OLLM과 연동하기 위해 테스트 중이에요."
                 ),
             })
         
@@ -463,9 +477,11 @@ async def api_worker_generate_auto(request: Request):
         bot_answer = result["text"].split(f"{conv.roles[1]}:")[-1]
     elif conv.sep_style == SeparatorStyle.ADD_NEW_LINE_SINGLE:
         bot_answer = result["text"].split(f"{conv.roles[1]}\n")[-1]
+    elif conv.sep_style == SeparatorStyle.LLAMA3:
+        bot_answer = result["text"].split(f"{conv.roles[1]}<|end_header_id|>\n\n")[-1]
     else:
         bot_answer = result["text"].split(f"{conv.roles[1]}")
-        logger.warn("There's no defined split method for bot_answer")
+        logger.warn(f"There's no defined split method for bot_answer({conv.sep_style})")
         
     conv.update_last_message(bot_answer)
     return {"text": bot_answer}
@@ -590,9 +606,11 @@ async def api_worker_regenerate_auto(request: Request):
         bot_answer = result["text"].split(f"{conv.roles[1]}:")[-1]
     elif conv.sep_style == SeparatorStyle.ADD_NEW_LINE_SINGLE:
         bot_answer = result["text"].split(f"{conv.roles[1]}\n")[-1]
+    elif conv.sep_style == SeparatorStyle.LLAMA3:
+        bot_answer = result["text"].split(f"{conv.roles[1]}<|end_header_id|>\n\n")[-1]
     else:
         bot_answer = result["text"].split(f"{conv.roles[1]}")
-        logger.warn("There's no defined split method for bot_answer")
+        logger.warn(f"There's no defined split method for bot_answer({conv.sep_style})")
     conv.update_last_message(bot_answer)
     return {"text": bot_answer}
     

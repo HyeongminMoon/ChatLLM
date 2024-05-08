@@ -14,6 +14,7 @@ vllm-gptq_hf_2023dec -> 2023dec
 버그: llamafied qwen -> llama.py의 bias 수정하기
 - requirements.txt
 
+pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/cu118/ && pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu118 --force-reinstall
 
 
 # 컨트롤러
